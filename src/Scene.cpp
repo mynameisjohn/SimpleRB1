@@ -49,7 +49,7 @@ void Scene::Draw()
 		dr.Draw();
 	}
 
-	//if ( m_bDrawContacts )
+	if ( m_bDrawContacts )
 	{
 		Drawable d1, d2;
 		std::array<Drawable *, 2> pContactDr = { &d1, &d2 };
@@ -199,7 +199,7 @@ int Scene::AddCollisionPlane( glm::vec2 N, float d )
 
 const Shader * Scene::GetShaderPtr() const
 {
-	return  &m_Shader;
+	return &m_Shader;
 }
 
 const Camera * Scene::GetCameraPtr() const

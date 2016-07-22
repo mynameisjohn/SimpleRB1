@@ -9,6 +9,16 @@ import sdl2.audio
 import sdl2.video
 import sdl2.events
 
+# Custom pyl modules
+import pylScene
+import pylShader
+import pylCamera
+import pylDrawable
+import pylRigidBody2D
+
+# My input manager class
+import InputManager
+
 # Used to construct ctypes sdl2 object
 # from pointer to object in C++
 import ctypes
@@ -20,12 +30,6 @@ def ctype_from_addr(capsule, type):
         return type.from_address(addr)
     raise RuntimeError('Error constructing ctype object, invalid capsule address')
 
-# Custom pyl modules
-import pylScene
-import pylShader
-import pylCamera
-import pylDrawable
-import pylRigidBody2D
 
 # Basic entity class, kind of gross at the moment
 # but all I need it to do is facilitate RB-Drawable talk
@@ -82,6 +86,7 @@ class Plane:
 # Global containers
 g_liEnts = []
 g_liPlanes = []
+g_InputManager = InputManager.InputManager(None, None, None)
 
 # Initialize the scene
 def Initialize(pScene):
@@ -115,7 +120,7 @@ def Initialize(pScene):
     # Set up static drawable handle
     pylDrawable.SetPosHandle(cShader.GetHandle('a_Pos'))
 
-    # create entities
+    # create entities, just two random ones for now
     g_liEnts.append(Entity(cScene,
         rbPrim = pylRigidBody2D.AABB,
         rbPos = [6,6],
@@ -146,24 +151,49 @@ def Initialize(pScene):
     for N in walls:
         g_liPlanes.append(Plane(cScene, N, d))
 
+    # Input handling
+
+    # Quit function, triggered bye scape
+    def fnQuitScene(btn, keyMgr):
+        nonlocal cScene
+        cScene.SetQuitFlag(True)
+    btnQuitEsc = InputManager.Button(sdl2.keycode.SDLK_ESCAPE, fnUp = fnQuitScene)
+
+    # Toggle contact drawing
+    def fnShowHideContacts(btn, keyMgr):
+        nonlocal cScene
+        cScene.SetDrawContacts(not(cScene.GetDrawContacts()))
+    btnShowHideContacts = InputManager.Button(sdl2.keycode.SDLK_c, fnUp = fnShowHideContacts)
+
+    # Toggle collision detection and RB integration
+    def fnPlayPauseCollision(btn, keyMgr):
+        nonlocal cScene
+        cScene.SetPauseCollision(not(cScene.GetPauseCollision()))
+    btnPlayPauseCollision = InputManager.Button(sdl2.keycode.SDLK_SPACE, fnUp = fnPlayPauseCollision)
+
+    # Create input manager (no mouse for now)
+    global g_InputManager
+    keyManager = InputManager.KeyboardManager([btnQuitEsc, btnShowHideContacts, btnPlayPauseCollision])
+    g_InputManager = InputManager.InputManager(cScene, keyManager, None)
+
 # Update scene and draw
 def Update(pScene):
     # construct pyl scene
     cScene = pylScene.Scene(pScene)
+
+    # Update entities, which updates drawable
+    global g_liEnts
     for e in g_liEnts:
         e.Update()
+
+    # Update and draw scene
     cScene.Update()
     cScene.Draw()
 
 # Handle SDL2 events
 def HandleEvent(pSdlEvent, pScene):
-    # construct pyl scene
-    cScene = pylScene.Scene(pScene)
-    # construct sdl2 event
+    # Delegate events to the input manager
+    global g_InputManager
     sdlEvent = ctype_from_addr(pSdlEvent, sdl2.events.SDL_Event)
-    # not a lot going on here for now, just exit handling
-    if sdlEvent.type == sdl2.events.SDL_KEYUP and sdlEvent.key.keysym.sym == sdl2.keycode.SDLK_ESCAPE:
-        cScene.SetQuitFlag(True)
-    if sdlEvent.type == sdl2.events.SDL_QUIT:
-        cScene.SetQuitFlag(True)
+    g_InputManager.HandleEvent(sdlEvent)
     
