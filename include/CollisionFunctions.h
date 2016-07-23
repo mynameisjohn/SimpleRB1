@@ -9,6 +9,7 @@ struct AABB;
 struct Plane;
 
 vec2 perp( vec2 v );	// returns (-v.y, v.x)
+float cross2D( vec2 a, vec2 b );
 vec2 maxComp( vec2 v );	// zeroes all but the biggest
 vec2 projectOnEdge( vec2 p, vec2 e0, vec2 e1 );
 
@@ -51,3 +52,7 @@ bool IsPointInside( vec2 p, AABB * pAABB );
 // AABB Functions
 glm::vec2 GetVert( AABB * pAABB, int idx );	
 glm::vec2 GetNormal( AABB * pAABB, int idx );
+
+////////////////////////////////////////////////////////////////////////////
+
+vec2 ClosestPtToTriangle( vec2 a, vec2 b, vec2 c, vec2 p );
