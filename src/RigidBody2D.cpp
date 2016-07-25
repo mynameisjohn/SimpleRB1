@@ -165,34 +165,34 @@ vec2 projectOnEdge( vec2 p, vec2 e0, vec2 e1 )
 	return e0 + v * clamp( t, 0.f, 1.f );
 }
 
-vec2 ClosestPtToTriangle( vec2 a, vec2 b, vec2 c, vec2 p )
+vec2 ClosestPtToTriangle( const Triangle * const pT, vec2 p )
 {
 	// Face edges
-	vec2 ab = b - a, ac = c - a, bc = c - b;
+	vec2 ab = pT->b - pT->a, ac = pT->c - pT->a, bc = pT->c - pT->b;
 
-	float s_ab = glm::dot( p - a, ab );		// unnormalized along ab
-	float s_ba = glm::dot( p - b, -ab );	// unnormalized along ba
+	float s_ab = glm::dot( p - pT->a, ab );		// unnormalized along ab
+	float s_ba = glm::dot( p - pT->b, -ab );	// unnormalized along ba
 
-	float t_bc = glm::dot( p - b, bc );		// unnormalized along bc
-	float t_cb = glm::dot( p - c, -bc );	// and along cb
+	float t_bc = glm::dot( p - pT->b, bc );		// unnormalized along bc
+	float t_cb = glm::dot( p - pT->c, -bc );	// and along cb
 
-	float u_ac = glm::dot( p - a, ac );		// along ac
-	float u_ca = glm::dot( p - c, -ac );	// along ca
+	float u_ac = glm::dot( p - pT->a, ac );		// along ac
+	float u_ca = glm::dot( p - pT->c, -ac );	// along ca
 
 	// If the unnormalized param from a to b
 	// and from a to c is negative, a is closest
 	if ( s_ab <= 0 && u_ac <= 0 )
-		return a;
+		return pT->a;
 
 	// If the unnormalized param from b to a
 	// and from b to c is negative, b is closest
 	if ( s_ba <= 0 && t_bc <= 0 )
-		return b;
+		return pT->b;
 
 	// If the unnormalized param from c to a
 	// and from c to b is negative, c is closest
 	if ( u_ca <= 0 && t_cb <= 0 )
-		return c;
+		return pT->c;
 
 	// If it wasn't one of those, check the edges
 	// For each face edge, create a new triangle
@@ -202,27 +202,36 @@ vec2 ClosestPtToTriangle( vec2 a, vec2 b, vec2 c, vec2 p )
 
 	// If proj(p, AB) is between A and B (both params positive)
 	// check the signed area of pab, return proj if negative
-	float sA_ab = n * cross2D( a - p, b - p );
-	if ( sA_ab <= 0 && s_ab > 0 && s_ba > 0 )
+	if ( s_ab > 0 && s_ba > 0 )
 	{
-		float s = s_ab / (s_ab + s_ba);
-		return a + s * ab;
+		float sA_ab = n * cross2D( pT->a - p, pT->b - p );
+		if ( sA_ab <= 0 )
+		{
+			float s = s_ab / (s_ab + s_ba);
+			return pT->a + s * ab;
+		}
 	}
 
 	// BC
-	float sA_bc = n * cross2D( b - p, c - p );
-	if ( sA_bc <= 0 && t_bc > 0 && t_cb > 0 )
+	if ( t_bc > 0 && t_cb > 0 )
 	{
-		float t = t_bc / (t_bc + t_cb);
-		return b + t * bc;
+		float sA_bc = n * cross2D( pT->b - p, pT->c - p );
+		if ( sA_bc <= 0 )
+		{
+			float t = t_bc / (t_bc + t_cb);
+			return pT->b + t * bc;
+		}
 	}
 
 	// CA
-	float sA_ca = n * cross2D( c - p, a - p );
-	if ( sA_ca <= 0 && u_ac > 0 && u_ca > 0 )
+	if ( u_ac > 0 && u_ca > 0 )
 	{
-		float u = u_ac / (u_ac + u_ca);
-		return c + u * ac;
+		float sA_ca = n * cross2D( pT->c - p, pT->a - p );
+		if ( sA_ca <= 0 )
+		{
+			float u = u_ac / (u_ac + u_ca);
+			return pT->c + u * ac;
+		}
 	}
 
 	// Inside triangle, return p

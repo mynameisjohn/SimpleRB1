@@ -7,6 +7,7 @@ struct RigidBody2D;
 struct Circle;
 struct AABB;
 struct Plane;
+struct Triangle;
 
 vec2 perp( vec2 v );	// returns (-v.y, v.x)
 float cross2D( vec2 a, vec2 b );
@@ -28,10 +29,12 @@ Contact GetSpecContact( AABB * pAABB, Plane * pPlane );
 // Functions for detecting overlap
 bool IsOverlapping( Circle * pA, Circle * pB );
 bool IsOverlapping( Circle * pCirc, AABB * pAABB );
+bool IsOverlapping( Circle * pCirc, Triangle * pT );
 
 bool IsOverlappingX( AABB * pA, AABB * pB );
 bool IsOverlappingY( AABB * pA, AABB * pB );
 bool IsOverlapping( AABB * pA, AABB * pB );
+bool IsOverlapping( AABB * pA, Triangle * pT );
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -55,4 +58,4 @@ glm::vec2 GetNormal( AABB * pAABB, int idx );
 
 ////////////////////////////////////////////////////////////////////////////
 
-vec2 ClosestPtToTriangle( vec2 a, vec2 b, vec2 c, vec2 p );
+vec2 ClosestPtToTriangle( const Triangle * pT, vec2 p );

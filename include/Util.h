@@ -44,3 +44,7 @@ public:
 		std::cout << m_Name << " took " << duration_cast<milliseconds>(m_End - m_Begin).count() << " mS";
 	}
 };
+
+// Const ptr type
+template<typename T>
+using const_ptr = const T * const;

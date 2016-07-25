@@ -158,6 +158,15 @@ bool IsOverlapping( Circle * pCirc, AABB * pAABB )
 	return bX && bY;
 }
 
+
+////////////////////////////////////////////////////////////////////////////
+
+bool IsOverlapping( Circle * pCirc, Triangle * pT )
+{
+	vec2 p = ClosestPtToTriangle( pT, pCirc->v2Center );
+	return glm::distance2( pCirc->v2Center, p ) <= powf( pCirc->fRadius, 2 );
+}
+
 ////////////////////////////////////////////////////////////////////////////
 
 bool IsPointInside( vec2 p, Circle * pCirc )

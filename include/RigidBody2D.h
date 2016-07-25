@@ -99,3 +99,11 @@ struct AABB : public RigidBody2D
 	static RigidBody2D Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity, glm::vec2 v2R );
 	static RigidBody2D Create( glm::vec2 vel, float mass, float elasticity, float x, float y, float w, float h );
 };
+
+// Until I find a better place for it
+struct Triangle
+{
+	glm::vec2 a;
+	glm::vec2 b;
+	glm::vec2 c;
+};
