@@ -125,8 +125,8 @@ void Scene::Update()
 	}
 }
 
-
-int Scene::AddDrawable( std::string strIqmFile, vec2 T, vec2 S, vec4 C, float theta /*= 0.f*/ )
+// Add a drawable from an IQM file
+int Scene::AddDrawableIQM( std::string strIqmFile, vec2 T, vec2 S, vec4 C, float theta /*= 0.f*/ )
 {
 	Drawable D;
 	try
@@ -134,6 +134,25 @@ int Scene::AddDrawable( std::string strIqmFile, vec2 T, vec2 S, vec4 C, float th
 		// Assume rotation about z for now
 		fquat qRot( cos( theta / 2 ), sin( theta / 2 ) * vec3( 0, 0, 1 ) );
 		D.Init( strIqmFile, C, quatvec( vec3( T, 0 ), qRot, quatvec::Type::TR ), S );
+	}
+	catch ( std::runtime_error )
+	{
+		return -1;
+	}
+
+	m_vDrawables.push_back( D );
+	return (int) (m_vDrawables.size() - 1);
+}
+
+// Add a drawable from three triangle verts
+int Scene::AddDrawableTri( std::string strName, std::array<vec3, 3> triVerts, vec2 T, vec2 S, vec4 C, float theta /*= 0.f*/ )
+{
+	Drawable D;
+	try
+	{
+		// Assume rotation about z for now
+		fquat qRot( cos( theta / 2 ), sin( theta / 2 ) * vec3( 0, 0, 1 ) );
+		D.Init( strName, triVerts, C, quatvec( vec3( T, 0 ), qRot, quatvec::Type::TR ), S );
 	}
 	catch ( std::runtime_error )
 	{
@@ -192,7 +211,7 @@ int Scene::AddCollisionPlane( glm::vec2 N, float d )
 	vec2 S( fLarge );
 	vec2 T = (d - fLarge / 2) * N;
 	float fTheta = acos( glm::dot( N, vec2( 1, 0 ) ) );
-	int ixDrawable = AddDrawable( "../models/quad.iqm", T, S, vec4( 0, 0, 0, 1 ), fTheta );
+	int ixDrawable = AddDrawableIQM( "../models/quad.iqm", T, S, vec4( 0, 0, 0, 1 ), fTheta );
 
 	return (int) (m_vCollisionPlanes.size() - 1);
 }

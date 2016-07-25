@@ -7,7 +7,7 @@
 // Static var declarations
 /*static*/ GLint Drawable::s_PosHandle;
 /*static*/ GLint Drawable::s_ColorHandle;
-/*static*/ std::map<std::string, std::array<GLuint, 2> > Drawable::s_VAOCache;
+/*static*/ std::map<std::string, Drawable::VAOData> Drawable::s_VAOCache;
 /*static*/ std::map<std::string, Drawable> Drawable::s_PrimitiveMap;
 
 Drawable::Drawable() :
@@ -17,6 +17,94 @@ Drawable::Drawable() :
 	m_v4Color( 1 ),
 	m_qvTransform( quatvec::Type::TRT )
 {}
+
+// Function for getting data into a Vertex Buffer Object
+void fillVBO( GLuint buf, GLint handle, void * ptr, GLsizeiptr numBytes, GLuint dim, GLuint type )
+{
+	glBindBuffer( GL_ARRAY_BUFFER, buf );
+	glBufferData( GL_ARRAY_BUFFER, numBytes, ptr, GL_STATIC_DRAW );
+	glEnableVertexAttribArray( handle );
+	glVertexAttribPointer( handle, dim, type, 0, 0, 0 );
+	//Disable?
+}
+
+bool Drawable::Init( std::string strName, std::array<glm::vec3, 3> triVerts, glm::vec4 v4Color, quatvec qvTransform, glm::vec2 v2Scale)
+{
+	if ( Drawable::s_PosHandle < 0 )
+	{
+		std::cerr << "Error: you haven't initialized the static pos handle for drawables!" << std::endl;
+		return false;
+	}
+
+	// See if we've loaded this Iqm File before
+	if ( s_VAOCache.find( strName ) == s_VAOCache.end() )
+	{
+		// Try and construct the drawable from an IQM file
+		try
+		{
+			// We'll be creating an indexed array of VBOs
+			GLuint VAO( 0 ), nIdx( 0 );
+
+			// Create vertex array object
+			glGenVertexArrays( 1, &VAO );
+			if ( VAO == 0 )
+			{
+				std::cerr << "Error creating VAO for " << strName << std::endl;
+				return false;
+			}
+
+			// Bind if successful
+			glBindVertexArray( VAO );
+
+			// Create VBOs
+			std::array<GLuint, 2> vboBuf{ { 0, 0 } };
+			glGenBuffers( vboBuf.size(), vboBuf.data() );
+			if ( vboBuf[0] == 0 || vboBuf[1] == 0 )
+			{
+				std::cerr << "Error creating VBOs " << strName << std::endl;
+				return false;
+			}
+
+			// Center triangle verts around centroid
+			// for clean rotation (python should do this)
+			vec3 v3Centroid;
+			for ( vec3 v : triVerts )
+				v3Centroid += v / 3.f;
+			for ( vec3& v : triVerts )
+				v -= v3Centroid;
+
+			// If successful, bind position attr and upload data
+			GLuint bufIdx( 0 );
+			fillVBO( vboBuf[bufIdx++], s_PosHandle, triVerts.data(), 3 * sizeof( glm::vec3 ), 3, GL_FLOAT );
+
+			// Same for indices
+			GLuint indices[] = { 0, 1, 2 };
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, vboBuf[bufIdx] );
+			glBufferData( GL_ELEMENT_ARRAY_BUFFER, 3 * sizeof( GLuint ), &indices[0], GL_STATIC_DRAW );
+
+			// Unbind VAO and cache data
+			glBindVertexArray( 0 );
+
+			s_VAOCache[strName] = { VAO, 3 };
+		}
+		catch ( std::runtime_error )
+		{
+			std::cerr << "Error constructing drawable from " << strName << std::endl;
+			return false;
+		}
+	}
+
+	// Store the transform and color values
+	m_qvTransform = qvTransform;
+	m_v2Scale = v2Scale;
+	m_v4Color = v4Color;
+
+	// Store the values from the static cache, return true
+	m_VAO = s_VAOCache[strName][0];
+	m_nIdx = s_VAOCache[strName][1];
+
+	return true;
+}
 
 bool Drawable::Init( std::string strIqmSrcFile, glm::vec4 v4Color, quatvec qvTransform, glm::vec2 v2Scale )
 {
@@ -34,17 +122,6 @@ bool Drawable::Init( std::string strIqmSrcFile, glm::vec4 v4Color, quatvec qvTra
 		{
 			// We'll be creating an indexed array of VBOs
 			GLuint VAO( 0 ), nIdx( 0 );
-
-			// Lambda to generate a VBO
-			auto makeVBO = []
-				( GLuint buf, GLint handle, void * ptr, GLsizeiptr numBytes, GLuint dim, GLuint type )
-			{
-				glBindBuffer( GL_ARRAY_BUFFER, buf );
-				glBufferData( GL_ARRAY_BUFFER, numBytes, ptr, GL_STATIC_DRAW );
-				glEnableVertexAttribArray( handle );
-				glVertexAttribPointer( handle, dim, type, 0, 0, 0 );
-				//Disable?
-			};
 
 			// Construct the file, this can throw an error
 			IQMFile f( strIqmSrcFile.c_str() );
@@ -72,9 +149,7 @@ bool Drawable::Init( std::string strIqmSrcFile, glm::vec4 v4Color, quatvec qvTra
 			// If successful, bind position attr and upload data
 			GLuint bufIdx( 0 );
 			auto pos = f.Positions();
-			std::vector<glm::vec3> vPos( pos.count() );
-			memcpy( vPos.data(), pos.ptr(),pos.count() * sizeof( vec3 ) );
-			makeVBO( vboBuf[bufIdx++], s_PosHandle, pos.ptr(), pos.numBytes(), pos.nativeSize() / sizeof( float ), GL_FLOAT );
+			fillVBO( vboBuf[bufIdx++], s_PosHandle, pos.ptr(), pos.numBytes(), pos.nativeSize() / sizeof( float ), GL_FLOAT );
 
 			// Same for indices
 			auto idx = f.Indices();

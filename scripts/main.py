@@ -47,7 +47,7 @@ class Entity:
             raise RuntimeError('Error creating rigid body')
 
         # Creat drawable, get index
-        drIdx = cScene.AddDrawable(kwargs['drIQMFile'],
+        drIdx = cScene.AddDrawableIQM(kwargs['drIQMFile'],
                                     kwargs['drPos'],
                                     kwargs['drScale'],
                                     kwargs['drColor'],
@@ -150,6 +150,14 @@ def Initialize(pScene):
     d = -8.
     for N in walls:
         g_liPlanes.append(Plane(cScene, N, d))
+
+    # Testing triangle drawables
+    #cScene.AddDrawableTri('tri1',                       # VAO key
+    #                      [[0,0,0],[-2,1,0],[-2,-1,0]], # verts
+    #                      [0,0],                        # pos
+    #                      [1,1],                        # sale
+    #                      [0,0,1,1],                    # color
+    #                      0 )                           # rotation
 
     # Input handling
 

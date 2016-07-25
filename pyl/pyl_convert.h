@@ -160,6 +160,11 @@ namespace pyl
         return convert_buf<T>(obj, arr.data(), int(N));
     }
 
+	template<class T, size_t N> bool convert( PyObject *obj, std::array<T, N>& arr )
+	{
+		return convert_buf<T>( obj, arr.data(), int( N ) );
+	}
+
 	// Generic convert function used by others
 	template<class T> bool generic_convert(PyObject *obj,
 		const std::function<bool(PyObject*)> &is_obj,

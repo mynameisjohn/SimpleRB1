@@ -8,6 +8,7 @@
 #include "Contact.h"
 
 #include <vector>
+#include <array>
 
 #include <SDL.h>
 
@@ -38,7 +39,8 @@ public:
 
 	bool InitDisplay( std::string strWindowName, vec4 v4ClearColor, std::map<std::string, int> mapDisplayAttrs );
 	
-	int AddDrawable( std::string strIqmFile, vec2 T, vec2 S, vec4 C, float theta = 0.f );
+	int AddDrawableIQM( std::string strIqmFile, vec2 T, vec2 S, vec4 C, float theta = 0.f );
+	int AddDrawableTri( std::string strName, std::array<vec3, 3> triVerts, vec2 T, vec2 S, vec4 C, float theta = 0.f );
 	int AddRigidBody( RigidBody2D::EType eType, glm::vec2 v2Vel, glm::vec2 v2Pos, float fMass, float fElasticity, std::map<std::string, float> mapDetails );
 	int AddCollisionPlane( glm::vec2 N, float d );
 private:

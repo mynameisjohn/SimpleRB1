@@ -38,7 +38,8 @@ bool ExposeScene()
 	AddMemFnToMod( pModDef, Scene, GetDrawable, const Drawable *, const size_t );
 	AddMemFnToMod( pModDef, Scene, GetRigidBody2D, const RigidBody2D *, const size_t );
 	AddMemFnToMod( pModDef, Scene, AddCollisionPlane, int, vec2, float );
-	AddMemFnToMod( pModDef, Scene, AddDrawable, int, std::string, vec2, vec2, vec4, float );
+	AddMemFnToMod( pModDef, Scene, AddDrawableTri, int, std::string, std::array<vec3, 3>, vec2, vec2, vec4, float );
+	AddMemFnToMod( pModDef, Scene, AddDrawableIQM, int, std::string, vec2, vec2, vec4, float );
 	AddMemFnToMod( pModDef, Scene, AddRigidBody, int, RigidBody2D::EType, vec2, vec2, float, float, std::map<std::string, float> );
 	AddMemFnToMod( pModDef, Scene, GetContacts, std::list<Contact *> );
 	AddMemFnToMod( pModDef, Scene, GetQuitFlag, bool );
