@@ -34,7 +34,7 @@ bool IsOverlapping( Circle * pCirc, Triangle * pT );
 bool IsOverlappingX( AABB * pA, AABB * pB );
 bool IsOverlappingY( AABB * pA, AABB * pB );
 bool IsOverlapping( AABB * pA, AABB * pB );
-bool IsOverlapping( AABB * pA, Triangle * pT );
+bool IsOverlapping( AABB * pAABB, Triangle * pT );
 
 ////////////////////////////////////////////////////////////////////////////
 

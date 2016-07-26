@@ -298,6 +298,51 @@ bool IsOverlapping( AABB* pA, AABB* pB )
 
 ////////////////////////////////////////////////////////////////////////////
 
+bool IsOverlapping( AABB * pAABB, Triangle * pT )
+{
+	// Test box axes - treat triangle as a box, return false if separating axis
+	if ( std::max( { pT->a.x, pT->b.x , pT->c.x } ) < pAABB->Left() )
+		return false;
+	if ( std::min( { pT->a.x, pT->b.x , pT->c.x } ) > pAABB->Right() )
+		return false;
+	if ( std::max( { pT->a.y, pT->b.y , pT->c.y } ) < pAABB->Bottom() )
+		return false;
+	if ( std::min( { pT->a.y, pT->b.y , pT->c.y } ) > pAABB->Top() )
+		return false;
+
+	// If that didn't work, make box center the origin
+	vec2 vA = pT->a - pAABB->v2Center;
+	vec2 vB = pT->b - pAABB->v2Center;
+	vec2 vC = pT->c - pAABB->v2Center;
+
+	// For every triangle face
+	for ( vec2 f : { vA - vC, vB - vA, vC - vB} )
+	{
+		// See if the face normal is a separating axis
+		// (I know this isn't normalized, I think it's OK)
+		vec2 n = perp( f );
+
+		// The box extents along the normal
+		float r = fabs( glm::dot( n, pAABB->v2HalfDim ) );
+
+		// The triangle extents along the normal
+		float pA = glm::dot( vA, n );
+		float pB = glm::dot( vB, n );
+		float pC = glm::dot( vC, n );
+
+		// If either is a separating axis, get out
+		if ( std::max( { pA, pB, pC } ) < -r )
+			return false;
+		if ( std::min( { pA, pB, pC } ) > r )
+			return false;
+	}
+
+	// No separating axis found, return true
+	return true;
+}
+
+////////////////////////////////////////////////////////////////////////////
+
 glm::vec2 GetVert( AABB * pAABB, int idx )
 {
 	vec2 ret( 0 );
