@@ -1,5 +1,6 @@
 #include "Scene.h"
 #include "Util.h"
+#include "CollisionFunctions.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <algorithm>
@@ -101,7 +102,7 @@ void Scene::Update()
 				itOuter->v2Force += -vec2( 0, fGrav );
 
 				// Check Plane RB collisions
-				m_liSpeculativeContacts.push_back( RigidBody2D::GetSpeculativeContact( &P, &*itOuter ) );
+				m_liSpeculativeContacts.push_back( GetSpeculativeContact( &P, &*itOuter ) );
 
 				// Check every one against the other
 				for ( auto itInner = itOuter + 1; itInner != m_vRigidBodies.end(); ++itInner )
@@ -110,7 +111,7 @@ void Scene::Update()
 					if ( itOuter->fMass < 0 && itInner->fMass < 0 )
 						continue;
 
-					m_liSpeculativeContacts.push_back( RigidBody2D::GetSpeculativeContact( &*itOuter, &*itInner ) );
+					m_liSpeculativeContacts.push_back( GetSpeculativeContact( &*itOuter, &*itInner ) );
 				}
 
 				// Increment total energy while we're at it
@@ -180,10 +181,7 @@ int Scene::AddRigidBody( RigidBody2D::EType eType, glm::vec2 v2Vel, glm::vec2 v2
 			{
 				float w = mapDetails.at( "w" );
 				float h = mapDetails.at( "h" );
-				if ( eType == RigidBody2D::EType::AABB )
-				{
-					rb = AABB::Create( v2Vel, v2Pos, fMass, fElasticity, glm::vec2( w, h ) / 2.f );
-				}
+				rb = AABB::Create( v2Vel, v2Pos, fMass, fElasticity, glm::vec2( w, h ) / 2.f );
 				break;
 			}
 			default:

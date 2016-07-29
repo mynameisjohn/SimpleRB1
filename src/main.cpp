@@ -1,6 +1,8 @@
 #include "GL_Util.h"
 #include "InitPython.h"
 #include "Scene.h"
+#include "CollisionFunctions.h"
+
 #include <SDL.h>
 #include <pyliaison.h>
 

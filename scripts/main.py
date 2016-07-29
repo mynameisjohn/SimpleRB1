@@ -14,6 +14,7 @@ import pylScene
 import pylShader
 import pylCamera
 import pylDrawable
+import pylShape
 import pylRigidBody2D
 
 # My input manager class
@@ -73,7 +74,7 @@ class Entity:
 
     def Update(self):
         # Update drawable transform
-        self.GetCollisionComponent().UpdateDrawable(self.GetDrawableComponent().c_ptr)
+        self.GetDrawableComponent().SetPos2D(self.GetCollisionComponent().Position())
 
 # Doesn't do a whole lot for now
 class Plane:
@@ -122,7 +123,7 @@ def Initialize(pScene):
 
     # create entities, just two random ones for now
     g_liEnts.append(Entity(cScene,
-        rbPrim = pylRigidBody2D.AABB,
+        rbPrim = pylShape.AABB,
         rbPos = [6,6],
         rbVel = [-5,0],
         rbMass = 1,
@@ -134,7 +135,7 @@ def Initialize(pScene):
         drColor = [1,1,1,1]))
 
     g_liEnts.append(Entity(cScene,
-        rbPrim = pylRigidBody2D.Circle,
+        rbPrim = pylShape.Circle,
         rbPos = [3,0],
         rbVel = [-5,0],
         rbMass = 1,

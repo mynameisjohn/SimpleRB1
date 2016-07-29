@@ -28,28 +28,44 @@ void RigidBody2D::Integrate(float fDT)
 }
 
 RigidBody2D::RigidBody2D() :
-	eType( EType::None ),
+	Shape(),
 	fMass( 0 ),
 	fElast( 0 )
 {}
 
-RigidBody2D::RigidBody2D( glm::vec2 vel, glm::vec2 c, float mass, float elasticity ) :
-	eType( EType::None ),
-	fMass( mass ),
-	fElast( elasticity ),
-	v2Vel( vel ),
-	v2Center( c )
+Shape::Shape() :
+	eType( EType::None )
 {}
 
-/*static*/ RigidBody2D RigidBody2D::Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity )
+vec2 Shape::Position() const
 {
-	return RigidBody2D( vel, c, mass, elasticity );
+	return v2Center;
 }
+
+Shape::EType Shape::Type() const
+{
+	return eType;
+}
+
+RigidBody2D::RigidBody2D( glm::vec2 vel, glm::vec2 c, float mass, float elasticity ) :
+	Shape(),
+	fMass( mass ),
+	fElast( elasticity ),
+	v2Vel( vel )
+{
+	v2Center = c;
+}
+
+///*static*/ RigidBody2D RigidBody2D::Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity )
+//{
+//	return RigidBody2D( vel, c, mass, elasticity );
+//}
 
 ////////////////////////////////////////////////////////////////////////////
 
-/*static*/ Contact RigidBody2D::GetSpeculativeContact( const RigidBody2D * pA, const RigidBody2D * pB )
+/*static*/ Contact GetSpeculativeContact( const RigidBody2D * pA, const RigidBody2D * pB )
 {
+	using EType = RigidBody2D::EType;
 	switch ( pA->eType )
 	{
 		case EType::Circle:
@@ -88,8 +104,9 @@ RigidBody2D::RigidBody2D( glm::vec2 vel, glm::vec2 c, float mass, float elastici
 
 ////////////////////////////////////////////////////////////////////////////
 
-/*static*/ Contact RigidBody2D::GetSpeculativeContact( const Plane * pPlane, const RigidBody2D * pB )
+/*static*/ Contact GetSpeculativeContact( const Plane * pPlane, const RigidBody2D * pB )
 {
+	using EType = RigidBody2D::EType;
 	switch ( pB->eType )
 	{
 		case EType::AABB:
@@ -116,11 +133,11 @@ float RigidBody2D::GetKineticEnergy() const
 	return 0.5f * fMass * glm::dot( v2Vel, v2Vel );
 }
 
-void RigidBody2D::UpdateDrawable(Drawable * pDrawable) const
-{
-	if ( pDrawable )
-		pDrawable->SetPos2D( v2Center );
-}
+//void RigidBody2D::UpdateDrawable(Drawable * pDrawable) const
+//{
+//	if ( pDrawable )
+//		pDrawable->SetPos2D( v2Center );
+//}
 
 // I need a good file for these
 vec2 perp( vec2 v )
@@ -168,31 +185,31 @@ vec2 projectOnEdge( vec2 p, vec2 e0, vec2 e1 )
 vec2 ClosestPtToTriangle( const Triangle * const pT, vec2 p )
 {
 	// Face edges
-	vec2 ab = pT->b - pT->a, ac = pT->c - pT->a, bc = pT->c - pT->b;
+	vec2 ab = pT->v2B - pT->v2A, ac = pT->v2C - pT->v2A, bc = pT->v2C - pT->v2B;
 
-	float s_ab = glm::dot( p - pT->a, ab );		// unnormalized along ab
-	float s_ba = glm::dot( p - pT->b, -ab );	// unnormalized along ba
+	float s_ab = glm::dot( p - pT->v2A, ab );		// unnormalized along ab
+	float s_ba = glm::dot( p - pT->v2B, -ab );	// unnormalized along ba
 
-	float t_bc = glm::dot( p - pT->b, bc );		// unnormalized along bc
-	float t_cb = glm::dot( p - pT->c, -bc );	// and along cb
+	float t_bc = glm::dot( p - pT->v2B, bc );		// unnormalized along bc
+	float t_cb = glm::dot( p - pT->v2C, -bc );	// and along cb
 
-	float u_ac = glm::dot( p - pT->a, ac );		// along ac
-	float u_ca = glm::dot( p - pT->c, -ac );	// along ca
+	float u_ac = glm::dot( p - pT->v2A, ac );		// along ac
+	float u_ca = glm::dot( p - pT->v2C, -ac );	// along ca
 
 	// If the unnormalized param from a to b
 	// and from a to c is negative, a is closest
 	if ( s_ab <= 0 && u_ac <= 0 )
-		return pT->a;
+		return pT->v2A;
 
 	// If the unnormalized param from b to a
 	// and from b to c is negative, b is closest
 	if ( s_ba <= 0 && t_bc <= 0 )
-		return pT->b;
+		return pT->v2B;
 
 	// If the unnormalized param from c to a
 	// and from c to b is negative, c is closest
 	if ( u_ca <= 0 && t_cb <= 0 )
-		return pT->c;
+		return pT->v2C;
 
 	// If it wasn't one of those, check the edges
 	// For each face edge, create a new triangle
@@ -204,33 +221,33 @@ vec2 ClosestPtToTriangle( const Triangle * const pT, vec2 p )
 	// check the signed area of pab, return proj if negative
 	if ( s_ab > 0 && s_ba > 0 )
 	{
-		float sA_ab = n * cross2D( pT->a - p, pT->b - p );
+		float sA_ab = n * cross2D( pT->v2A - p, pT->v2B - p );
 		if ( sA_ab <= 0 )
 		{
 			float s = s_ab / (s_ab + s_ba);
-			return pT->a + s * ab;
+			return pT->v2A + s * ab;
 		}
 	}
 
 	// BC
 	if ( t_bc > 0 && t_cb > 0 )
 	{
-		float sA_bc = n * cross2D( pT->b - p, pT->c - p );
+		float sA_bc = n * cross2D( pT->v2B - p, pT->v2C - p );
 		if ( sA_bc <= 0 )
 		{
 			float t = t_bc / (t_bc + t_cb);
-			return pT->b + t * bc;
+			return pT->v2B + t * bc;
 		}
 	}
 
 	// CA
 	if ( u_ac > 0 && u_ca > 0 )
 	{
-		float sA_ca = n * cross2D( pT->c - p, pT->a - p );
+		float sA_ca = n * cross2D( pT->v2C - p, pT->v2A - p );
 		if ( sA_ca <= 0 )
 		{
 			float u = u_ac / (u_ac + u_ca);
-			return pT->c + u * ac;
+			return pT->v2C + u * ac;
 		}
 	}
 

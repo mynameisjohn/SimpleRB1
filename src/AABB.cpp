@@ -76,9 +76,9 @@ glm::vec2 AABB::GetFaceNormalFromPoint( const glm::vec2 p ) const
 
 /*static*/ RigidBody2D AABB::Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity, glm::vec2 v2R )
 {
-	RigidBody2D ret = RigidBody2D::Create( vel, c, mass, elasticity );
+	RigidBody2D ret( vel, c, mass, elasticity );
 	ret.v2HalfDim = v2R;
-	ret.eType = RigidBody2D::EType::AABB;
+	ret.eType = EType::AABB;
 	return ret;
 }
 
@@ -86,9 +86,9 @@ glm::vec2 AABB::GetFaceNormalFromPoint( const glm::vec2 p ) const
 
 /*static*/ RigidBody2D AABB::Create( glm::vec2 vel, float mass, float elasticity, float x, float y, float w, float h )
 {
-	RigidBody2D ret = RigidBody2D::Create( vel, vec2( x, y ), mass, elasticity );
+	RigidBody2D ret( vel, vec2( x, y ), mass, elasticity );
 	ret.v2HalfDim = vec2( w, h ) / 2.f;
-	ret.eType = RigidBody2D::EType::AABB;
+	ret.eType = EType::AABB;
 	return ret;
 }
 
@@ -247,7 +247,7 @@ Contact GetSpecContact( AABB * pA, AABB * pB )
 		vec2 posB = GetVert( pB, vIdxB );
 		n = glm::normalize( posB - posA );
 		float fDist = glm::distance( posA, posB );
-		return Contact( pA, pB, posA, posB, n, fDist );
+		return Contact( (RigidBody2D *) pA, (RigidBody2D *) pB, posA, posB, n, fDist );
 	}
 
 	// For the face case, we get the two vertices from each colliding face
@@ -256,7 +256,7 @@ Contact GetSpecContact( AABB * pA, AABB * pB )
 	vec2 posA = 0.5f * (GetVert( pA, vIdxA ) + GetVert( pA, vIdxA + 1 ));
 	vec2 posB = 0.5f * (GetVert( pB, vIdxB ) + GetVert( pB, vIdxB + 1 ));
 	float fDist = glm::dot( n, posB - posA );
-	return Contact( pA, pB, posA, posB, n, fDist );
+	return Contact( (RigidBody2D *) pA, (RigidBody2D *) pB, posA, posB, n, fDist );
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -267,7 +267,7 @@ Contact GetSpecContact( AABB * pAABB, Plane * pPlane )
 	glm::vec2 posA = pAABB->v2Center - fDistToPlane * pPlane->v2Normal;
 	glm::vec2 posB = pAABB->Clamp( posA );
 	float fDist = glm::dot( pPlane->v2Normal, posB - posA );
-	return Contact( pPlane, pAABB, posA, posB, pPlane->v2Normal, fDist );
+	return Contact( pPlane, (RigidBody2D *) pAABB, posA, posB, pPlane->v2Normal, fDist );
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -301,19 +301,19 @@ bool IsOverlapping( AABB* pA, AABB* pB )
 bool IsOverlapping( AABB * pAABB, Triangle * pT )
 {
 	// Test box axes - treat triangle as a box, return false if separating axis
-	if ( std::max( { pT->a.x, pT->b.x , pT->c.x } ) < pAABB->Left() )
+	if ( std::max( { pT->v2A.x, pT->v2B.x , pT->v2C.x } ) < pAABB->Left() )
 		return false;
-	if ( std::min( { pT->a.x, pT->b.x , pT->c.x } ) > pAABB->Right() )
+	if ( std::min( { pT->v2A.x, pT->v2B.x , pT->v2C.x } ) > pAABB->Right() )
 		return false;
-	if ( std::max( { pT->a.y, pT->b.y , pT->c.y } ) < pAABB->Bottom() )
+	if ( std::max( { pT->v2A.y, pT->v2B.y , pT->v2C.y } ) < pAABB->Bottom() )
 		return false;
-	if ( std::min( { pT->a.y, pT->b.y , pT->c.y } ) > pAABB->Top() )
+	if ( std::min( { pT->v2A.y, pT->v2B.y , pT->v2C.y } ) > pAABB->Top() )
 		return false;
 
 	// If that didn't work, make box center the origin
-	vec2 vA = pT->a - pAABB->v2Center;
-	vec2 vB = pT->b - pAABB->v2Center;
-	vec2 vC = pT->c - pAABB->v2Center;
+	vec2 vA = pT->v2A - pAABB->v2Center;
+	vec2 vB = pT->v2B - pAABB->v2Center;
+	vec2 vC = pT->v2C - pAABB->v2Center;
 
 	// For every triangle face
 	for ( vec2 f : { vA - vC, vB - vA, vC - vB} )

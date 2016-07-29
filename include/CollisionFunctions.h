@@ -24,6 +24,9 @@ Contact GetSpecContact( Circle * pCirc, Plane * pPlane );
 Contact GetSpecContact( AABB * pA, AABB * pB );
 Contact GetSpecContact( AABB * pAABB, Plane * pPlane );
 
+Contact GetSpeculativeContact( const RigidBody2D * pA, const RigidBody2D * pB );
+Contact GetSpeculativeContact( const Plane * pPlane, const RigidBody2D * pB );
+
 ////////////////////////////////////////////////////////////////////////////
 
 // Functions for detecting overlap

@@ -11,7 +11,7 @@
 
 /*static*/ RigidBody2D Circle::Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity, float radius )
 {
-	RigidBody2D ret = RigidBody2D::Create( vel, c, mass, elasticity );
+	RigidBody2D ret( vel, c, mass, elasticity );
 	ret.fRadius = radius;
 	ret.eType = RigidBody2D::EType::Circle;
 	return ret;
@@ -46,7 +46,7 @@ Contact GetSpecContact( Circle * pA, Circle * pB )
 	}
 
 	// Construct and return
-	return Contact( pA, pB, a_pos, b_pos, n, dist );
+	return Contact( (RigidBody2D *) pA, (RigidBody2D *) pB, a_pos, b_pos, n, dist );
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -118,14 +118,14 @@ Contact GetSpecContact( Circle * pCirc, AABB *  pAABB )
 		n = glm::normalize( posB - pCirc->v2Center );
 		vec2 posA = pCirc->v2Center + pCirc->fRadius * n;
 		float fDist = glm::dot( posB - posA, n );
-		return Contact( pCirc, pAABB, posA, posB, n, fDist );
+		return Contact( (RigidBody2D *) pCirc, (RigidBody2D *) pAABB, posA, posB, n, fDist );
 	}
 
 	// For a face region collision, take box position as center of face
 	vec2 posB = 0.5f*(GetVert( pAABB, vIdx ) + GetVert( pAABB, vIdx + 1 ));
 	vec2 posA = pCirc->v2Center + pCirc->fRadius * n;
 	float fDist = glm::dot( posB - posA, n );
-	return Contact( pCirc, pAABB, posA, posB, n, fDist );
+	return Contact( (RigidBody2D *) pCirc, (RigidBody2D *) pAABB, posA, posB, n, fDist );
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -135,7 +135,7 @@ Contact GetSpecContact( Circle * pCirc, Plane * pPlane )
 	float fDistToPlane = glm::dot( pCirc->v2Center, pPlane->v2Normal ) - pPlane->fDist;
 	glm::vec2 posA = pCirc->v2Center - fDistToPlane * pPlane->v2Normal;
 	glm::vec2 posB = pCirc->v2Center - pPlane->v2Normal * pCirc->fRadius;
-	return Contact( pPlane, pCirc, posA, posB, pPlane->v2Normal, fDistToPlane - pCirc->fRadius );
+	return Contact( pPlane, (RigidBody2D *) pCirc, posA, posB, pPlane->v2Normal, fDistToPlane - pCirc->fRadius );
 }
 
 ////////////////////////////////////////////////////////////////////////////

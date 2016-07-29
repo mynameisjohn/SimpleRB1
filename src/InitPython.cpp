@@ -7,6 +7,13 @@
 
 using namespace pyl;
 
+#define CHECK_PYL_PTR\
+	if ( pModDef == nullptr )\
+	{\
+		throw pyl::runtime_error( "Error creating module!" );\
+		return false;\
+	}\
+
 bool ExposeEntComponent()
 {
 	const std::string strModuleName = "pylEntComponent";
@@ -26,8 +33,7 @@ bool ExposeEntComponent()
 bool ExposeScene()
 {
 	ModuleDef * pModDef = CreateMod( pylScene );
-	if ( pModDef == nullptr )
-		return false;
+	CHECK_PYL_PTR;
 
 	AddClassToMod( pModDef, Scene );
 
@@ -58,8 +64,7 @@ bool ExposeScene()
 bool ExposeShader()
 {
 	ModuleDef * pModDef = CreateMod( pylShader );
-	if ( pModDef == nullptr )
-		return false;
+	CHECK_PYL_PTR;
 
 	AddClassToMod( pModDef, Shader );
 	AddMemFnToMod( pModDef, Shader, Init, bool, std::string, std::string, bool );
@@ -76,8 +81,7 @@ bool ExposeShader()
 bool ExposeCamera()
 {
 	ModuleDef * pModDef = CreateMod( pylCamera );
-	if ( pModDef == nullptr )
-		return false;
+	CHECK_PYL_PTR;
 
 	AddClassToMod( pModDef, Camera );
 	AddMemFnToMod( pModDef, Camera, InitOrtho, void, float, float, float, float );
@@ -91,8 +95,7 @@ bool ExposeCamera()
 bool ExposeDrawable()
 {
 	ModuleDef * pModDef = CreateMod( pylDrawable );
-	if ( pModDef == nullptr )
-		return false;
+	CHECK_PYL_PTR;
 
 	ModuleDef * pEntMod = ModuleDef::GetModuleDef( "pylEntComponent" );
 	AddSubClassToMod( pModDef, Drawable, pEntMod, EntComponent );
@@ -111,22 +114,46 @@ bool ExposeDrawable()
 	return true;
 }
 
-bool ExposeRigidBody2D()
+bool ExposeShape()
 {
-	ModuleDef * pModDef = CreateMod( pylRigidBody2D );
-	if ( pModDef == nullptr )
-		return false;
+	ModuleDef * pModDef = CreateMod( pylShape );
+	CHECK_PYL_PTR;
 
 	ModuleDef * pEntMod = ModuleDef::GetModuleDef( "pylEntComponent" );
-	AddSubClassToMod( pModDef, RigidBody2D, pEntMod, EntComponent );
+	if ( pEntMod == nullptr )
+	{
+		throw pyl::runtime_error( "Error getting parent!" );
+		return false;
+	}
 
-	AddMemFnToMod( pModDef, RigidBody2D, UpdateDrawable, void, Drawable * );
+	AddSubClassToMod( pModDef, Shape, pEntMod, EntComponent );
+
+	AddMemFnToMod( pModDef, Shape, Position, vec2 );
+	AddMemFnToMod( pModDef, Shape, Type, Shape::EType );
 
 	pModDef->SetCustomModuleInit( [] ( pyl::Object obModule )
 	{
-		obModule.set_attr( "Circle", RigidBody2D::EType::Circle );
-		obModule.set_attr( "AABB", RigidBody2D::EType::AABB );
+		obModule.set_attr( "Circle", Shape::EType::Circle );
+		obModule.set_attr( "AABB", Shape::EType::AABB );
+		obModule.set_attr( "Triangle", Shape::EType::Triangle );
 	} );
+
+	return true;
+}
+
+bool ExposeRigidBody2D()
+{
+	ModuleDef * pModDef = CreateMod( pylRigidBody2D );
+	CHECK_PYL_PTR;
+
+	ModuleDef * pShapeMod = ModuleDef::GetModuleDef( "pylShape" );
+	if ( pShapeMod == nullptr )
+	{
+		throw pyl::runtime_error( "Error getting parent!" );
+		return false;
+	}
+
+	AddSubClassToMod( pModDef, RigidBody2D, pShapeMod, Shape );
 
 	return true;
 }
@@ -134,8 +161,7 @@ bool ExposeRigidBody2D()
 bool ExposePlane()
 {
 	ModuleDef * pModDef = CreateMod( pylPlane );
-	if ( pModDef == nullptr )
-		return false;
+	CHECK_PYL_PTR;
 
 	AddClassToMod( pModDef, Plane );
 	AddMemFnToMod( pModDef, Plane, SetNormal, void, vec2 );
@@ -147,8 +173,7 @@ bool ExposePlane()
 bool ExposeContact()
 {
 	ModuleDef * pModDef = CreateMod( pylContact );
-	if ( pModDef == nullptr )
-		return false;
+	CHECK_PYL_PTR;
 
 	AddClassToMod( pModDef, Contact );
 	AddMemFnToMod( pModDef, Contact, GetBodyA, const RigidBody2D * );
@@ -167,6 +192,7 @@ bool ExposeAll()
 		ExposeShader,
 		ExposeCamera,
 		ExposeDrawable,
+		ExposeShape,
 		ExposeRigidBody2D,
 		ExposeContact
 	};
@@ -210,13 +236,24 @@ namespace pyl
 		return false;
 	}
 
-	bool convert( PyObject * o, RigidBody2D::EType& e )
+	bool convert( PyObject * o, Shape::EType& e )
 	{
-		return convertEnum<RigidBody2D::EType>( o, e );
+		return convertEnum<Shape::EType>( o, e );
 	}
 
-	PyObject * alloc_pyobject( const RigidBody2D::EType e )
+	PyObject * alloc_pyobject( const Shape::EType e )
 	{
 		return PyLong_FromLong( (long) e );
+	}
+
+	PyObject * alloc_pyobject( const vec2& v )
+	{
+		PyObject * pRet = PyList_New( 2 );
+		if ( pRet )
+		{
+			PyList_SetItem( pRet, 0, alloc_pyobject( v[0] ) );
+			PyList_SetItem( pRet, 1, alloc_pyobject( v[1] ) );
+		}
+		return pRet;
 	}
 }
