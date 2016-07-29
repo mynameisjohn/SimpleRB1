@@ -39,6 +39,8 @@ bool IsOverlappingY( AABB * pA, AABB * pB );
 bool IsOverlapping( AABB * pA, AABB * pB );
 bool IsOverlapping( AABB * pAABB, Triangle * pT );
 
+bool IsOverlapping( const Shape * pA, const Shape * pB );
+
 ////////////////////////////////////////////////////////////////////////////
 
 // Determine if a point is inside an object

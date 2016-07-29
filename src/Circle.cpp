@@ -9,10 +9,20 @@
 
 ////////////////////////////////////////////////////////////////////////////
 
-/*static*/ RigidBody2D Circle::Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity, float radius )
+/*static*/ RigidBody2D Circle::Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity, float fRadius )
 {
 	RigidBody2D ret( vel, c, mass, elasticity );
-	ret.fRadius = radius;
+	ret.fRadius = fRadius;
+	ret.eType = RigidBody2D::EType::Circle;
+	return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+/*static*/ SoftBody2D Circle::Create( glm::vec2 c, float fRadius )
+{
+	SoftBody2D ret( c );
+	ret.fRadius = fRadius;
 	ret.eType = RigidBody2D::EType::Circle;
 	return ret;
 }
@@ -164,7 +174,8 @@ bool IsOverlapping( Circle * pCirc, AABB * pAABB )
 bool IsOverlapping( Circle * pCirc, Triangle * pT )
 {
 	vec2 p = ClosestPtToTriangle( pT, pCirc->v2Center );
-	return glm::distance2( pCirc->v2Center, p ) <= powf( pCirc->fRadius, 2 );
+	float f1 = glm::distance2( pCirc->v2Center, p );
+	return f1 <= powf( pCirc->fRadius, 2 );
 }
 
 ////////////////////////////////////////////////////////////////////////////

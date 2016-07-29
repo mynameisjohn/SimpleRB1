@@ -37,6 +37,12 @@ Shape::Shape() :
 	eType( EType::None )
 {}
 
+Shape::Shape( glm::vec2 v2C ) :
+	eType( EType::None ),
+	v2Center( v2C )
+{}
+
+
 vec2 Shape::Position() const
 {
 	return v2Center;
@@ -48,12 +54,20 @@ Shape::EType Shape::Type() const
 }
 
 RigidBody2D::RigidBody2D( glm::vec2 vel, glm::vec2 c, float mass, float elasticity ) :
-	Shape(),
+	Shape( c ), 
 	fMass( mass ),
 	fElast( elasticity ),
 	v2Vel( vel )
+{}
+
+SoftBody2D Triangle::Create( glm::vec2 c, glm::vec2 A, glm::vec2 B, glm::vec2 C )
 {
-	v2Center = c;
+	SoftBody2D ret( c );
+	ret.eType = EType::Triangle;
+	ret.v2A = A;
+	ret.v2B = B;
+	ret.v2C = C;
+	return ret;
 }
 
 ///*static*/ RigidBody2D RigidBody2D::Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity )
@@ -100,6 +114,65 @@ RigidBody2D::RigidBody2D( glm::vec2 vel, glm::vec2 c, float mass, float elastici
 
 	throw std::runtime_error( "Error: Invalid rigid body type!" );
 	return Contact();
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+/*static*/ bool IsOverlapping( const Shape * pA, const Shape * pB )
+{
+	using EType = Shape::EType;
+	switch ( pA->eType )
+	{
+		case EType::Circle:
+		{
+			Circle * pCircA = (Circle *) pA;
+			switch ( pB->eType )
+			{
+				case EType::Circle:
+					return IsOverlapping( pCircA, (Circle *) pB );
+				case EType::AABB:
+					return IsOverlapping( pCircA, (AABB *) pB );
+				case EType::Triangle:
+					return IsOverlapping( pCircA, (Triangle *) pB );
+				default:
+					break;
+			}
+			break;
+		}
+		case EType::AABB:
+		{
+			AABB * pBoxA = (AABB *) pA;
+			switch ( pB->eType )
+			{
+				case EType::Circle:
+					return IsOverlapping( (Circle *) pB, pBoxA );
+				case EType::AABB:
+					return IsOverlapping( pBoxA, (AABB *) pB );
+				case EType::Triangle:
+					return IsOverlapping( pBoxA, (Triangle *) pB );
+				default:
+					break;
+			}
+			break;
+		}
+		case EType::Triangle:
+		{
+			Triangle * pTriA = (Triangle *) pA;
+			switch ( pB->eType )
+			{
+				case EType::Circle:
+					return IsOverlapping( (Circle *) pB, pTriA );
+				case EType::AABB:
+					return IsOverlapping( (AABB *) pB, pTriA );
+				default:
+					break;
+			}
+			break;
+		}
+	}
+
+	throw std::runtime_error( "Error: Invalid rigid body type!" );
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -217,6 +290,7 @@ vec2 ClosestPtToTriangle( const Triangle * const pT, vec2 p )
 	// signed area (positive half determined by n)
 	float n = cross2D( ab, ac );
 
+
 	// If proj(p, AB) is between A and B (both params positive)
 	// check the signed area of pab, return proj if negative
 	if ( s_ab > 0 && s_ba > 0 )
@@ -240,14 +314,14 @@ vec2 ClosestPtToTriangle( const Triangle * const pT, vec2 p )
 		}
 	}
 
-	// CA
+	// CA (note that ac goes from a to c, so we go from v2A)
 	if ( u_ac > 0 && u_ca > 0 )
 	{
 		float sA_ca = n * cross2D( pT->v2C - p, pT->v2A - p );
 		if ( sA_ca <= 0 )
 		{
 			float u = u_ac / (u_ac + u_ca);
-			return pT->v2C + u * ac;
+			return pT->v2A + u * ac;
 		}
 	}
 

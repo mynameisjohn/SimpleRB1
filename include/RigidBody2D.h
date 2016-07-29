@@ -34,6 +34,7 @@ struct Shape : public EntComponent
 	};
 
 	Shape();
+	Shape( glm::vec2 v2C );
 
 	glm::vec2 Position() const;
 	EType Type() const;
@@ -73,8 +74,8 @@ struct Circle : public Shape
 {
 	Circle() = delete;
 
-	static RigidBody2D Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity, float radius );
-	static SoftBody2D Create( glm::vec2 c, float radius );
+	static RigidBody2D Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity, float fRadius );
+	static SoftBody2D Create( glm::vec2 c, float fRadius );
 
 	float Radius() const;
 };

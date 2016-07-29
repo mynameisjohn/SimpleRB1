@@ -5,6 +5,8 @@
 #include <string>
 #include <map>
 
+using EType = Shape::EType;
+
 using namespace pyl;
 
 #define CHECK_PYL_PTR\
@@ -42,11 +44,13 @@ bool ExposeScene()
 	AddMemFnToMod( pModDef, Scene, GetCameraPtr, const Camera * );
 	AddMemFnToMod( pModDef, Scene, GetPlane, const Plane *, const size_t );
 	AddMemFnToMod( pModDef, Scene, GetDrawable, const Drawable *, const size_t );
+	AddMemFnToMod( pModDef, Scene, GetSoftBody2D, const SoftBody2D *, const size_t );
 	AddMemFnToMod( pModDef, Scene, GetRigidBody2D, const RigidBody2D *, const size_t );
 	AddMemFnToMod( pModDef, Scene, AddCollisionPlane, int, vec2, float );
 	AddMemFnToMod( pModDef, Scene, AddDrawableTri, int, std::string, std::array<vec3, 3>, vec2, vec2, vec4, float );
 	AddMemFnToMod( pModDef, Scene, AddDrawableIQM, int, std::string, vec2, vec2, vec4, float );
-	AddMemFnToMod( pModDef, Scene, AddRigidBody, int, RigidBody2D::EType, vec2, vec2, float, float, std::map<std::string, float> );
+	AddMemFnToMod( pModDef, Scene, AddSoftBody, int, EType, glm::vec2, std::map<std::string, float> );
+	AddMemFnToMod( pModDef, Scene, AddRigidBody, int, EType, vec2, vec2, float, float, std::map<std::string, float> );
 	AddMemFnToMod( pModDef, Scene, GetContacts, std::list<Contact *> );
 	AddMemFnToMod( pModDef, Scene, GetQuitFlag, bool );
 	AddMemFnToMod( pModDef, Scene, SetQuitFlag, void, bool );
@@ -129,13 +133,13 @@ bool ExposeShape()
 	AddSubClassToMod( pModDef, Shape, pEntMod, EntComponent );
 
 	AddMemFnToMod( pModDef, Shape, Position, vec2 );
-	AddMemFnToMod( pModDef, Shape, Type, Shape::EType );
+	AddMemFnToMod( pModDef, Shape, Type, EType );
 
 	pModDef->SetCustomModuleInit( [] ( pyl::Object obModule )
 	{
-		obModule.set_attr( "Circle", Shape::EType::Circle );
-		obModule.set_attr( "AABB", Shape::EType::AABB );
-		obModule.set_attr( "Triangle", Shape::EType::Triangle );
+		obModule.set_attr( "Circle", EType::Circle );
+		obModule.set_attr( "AABB", EType::AABB );
+		obModule.set_attr( "Triangle", EType::Triangle );
 	} );
 
 	return true;
@@ -238,10 +242,10 @@ namespace pyl
 
 	bool convert( PyObject * o, Shape::EType& e )
 	{
-		return convertEnum<Shape::EType>( o, e );
+		return convertEnum<EType>( o, e );
 	}
 
-	PyObject * alloc_pyobject( const Shape::EType e )
+	PyObject * alloc_pyobject( const EType e )
 	{
 		return PyLong_FromLong( (long) e );
 	}

@@ -116,6 +116,16 @@ void Scene::Update()
 
 				// Increment total energy while we're at it
 				fTotalEnergy += itOuter->GetKineticEnergy();
+
+				// Soft bodies here?
+				size_t uOverlaps( 0 );
+				for ( SoftBody2D& sb : m_vSoftBodies )
+				{
+					if ( IsOverlapping( &sb, &*itOuter ) )
+					{
+						uOverlaps++;
+					}
+				}
 			}
 		}
 
@@ -164,20 +174,65 @@ int Scene::AddDrawableTri( std::string strName, std::array<vec3, 3> triVerts, ve
 	return (int) (m_vDrawables.size() - 1);
 }
 
+int Scene::AddSoftBody( Shape::EType eType, glm::vec2 v2Pos, std::map<std::string, float> mapDetails )
+{
+	using EType = Shape::EType;
+	try
+	{
+		SoftBody2D sb;
+		switch ( eType )
+		{
+			case EType::Circle:
+			{
+				float fRad = mapDetails.at( "r" );
+				sb = Circle::Create( v2Pos, fRad );
+				break;
+			}
+			case EType::AABB:
+			{
+				float w = mapDetails.at( "w" );
+				float h = mapDetails.at( "h" );
+				sb = AABB::Create( v2Pos, glm::vec2( w, h ) / 2.f );
+				break;
+			}
+			case EType::Triangle:
+			{
+				vec2 a( mapDetails.at( "aX" ), mapDetails.at( "aY" ) );
+				vec2 b( mapDetails.at( "bX" ), mapDetails.at( "bY" ) );
+				vec2 c( mapDetails.at( "cX" ), mapDetails.at( "cY" ) );
+				sb = Triangle::Create( v2Pos, a, b, c );
+				break;
+			}
+			default:
+				return -1;
+		}
+
+		m_vSoftBodies.push_back( sb );
+		return m_vSoftBodies.size() - 1;
+	}
+	catch ( std::out_of_range )
+	{
+		std::cerr << "Error! Invalid details provided when creating Rigid Body!" << std::endl;
+	}
+
+	return -1;
+}
+
 int Scene::AddRigidBody( RigidBody2D::EType eType, glm::vec2 v2Vel, glm::vec2 v2Pos, float fMass, float fElasticity, std::map<std::string, float> mapDetails )
 {
+	using EType = Shape::EType;
 	try
 	{
 		RigidBody2D rb;
 		switch ( eType )
 		{
-			case RigidBody2D::EType::Circle:
+			case EType::Circle:
 			{
 				float fRad = mapDetails.at( "r" );
 				rb = Circle::Create( v2Vel, v2Pos, fMass, fElasticity, fRad );
 				break;
 			}
-			case RigidBody2D::EType::AABB:
+			case EType::AABB:
 			{
 				float w = mapDetails.at( "w" );
 				float h = mapDetails.at( "h" );
@@ -239,6 +294,15 @@ const Drawable * Scene::GetDrawable( const size_t drIdx ) const
 		return &m_vDrawables[drIdx];
 
 	throw std::runtime_error( "Error: Drawable index out of bound!" );
+	return nullptr;
+}
+
+const SoftBody2D * Scene::GetSoftBody2D( const size_t sbIdx ) const
+{
+	if ( sbIdx < m_vSoftBodies.size() )
+		return &m_vSoftBodies[sbIdx];
+
+	throw std::runtime_error( "Error: SB index out of bound!" );
 	return nullptr;
 }
 

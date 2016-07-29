@@ -74,6 +74,26 @@ glm::vec2 AABB::GetFaceNormalFromPoint( const glm::vec2 p ) const
 
 ////////////////////////////////////////////////////////////////////////////
 
+/*static*/ SoftBody2D AABB::Create( glm::vec2 c, glm::vec2 v2R )
+{
+	SoftBody2D ret( c );
+	ret.v2HalfDim = v2R;
+	ret.eType = EType::AABB;
+	return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+/*static*/ SoftBody2D AABB::Create( float x, float y, float w, float h )
+{
+	SoftBody2D ret( vec2( x, y ) );
+	ret.v2HalfDim = vec2( w, h ) / 2.f;
+	ret.eType = EType::AABB;
+	return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////
+
 /*static*/ RigidBody2D AABB::Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity, glm::vec2 v2R )
 {
 	RigidBody2D ret( vel, c, mass, elasticity );

@@ -67,11 +67,11 @@ bool Drawable::Init( std::string strName, std::array<glm::vec3, 3> triVerts, glm
 
 			// Center triangle verts around centroid
 			// for clean rotation (python should do this)
-			vec3 v3Centroid;
-			for ( vec3 v : triVerts )
-				v3Centroid += v / 3.f;
-			for ( vec3& v : triVerts )
-				v -= v3Centroid;
+			//vec3 v3Centroid;
+			//for ( vec3 v : triVerts )
+			//	v3Centroid += v / 3.f;
+			//for ( vec3& v : triVerts )
+			//	v -= v3Centroid;
 
 			// If successful, bind position attr and upload data
 			GLuint bufIdx( 0 );

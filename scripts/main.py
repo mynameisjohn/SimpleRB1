@@ -136,7 +136,7 @@ def Initialize(pScene):
 
     g_liEnts.append(Entity(cScene,
         rbPrim = pylShape.Circle,
-        rbPos = [3,0],
+        rbPos = [-3,0],
         rbVel = [-5,0],
         rbMass = 1,
         rbElasticity = 1,
@@ -153,12 +153,33 @@ def Initialize(pScene):
         g_liPlanes.append(Plane(cScene, N, d))
 
     # Testing triangle drawables
-    #cScene.AddDrawableTri('tri1',                       # VAO key
-    #                      [[0,0,0],[-2,1,0],[-2,-1,0]], # verts
-    #                      [0,0],                        # pos
-    #                      [1,1],                        # sale
-    #                      [0,0,1,1],                    # color
-    #                      0 )                           # rotation
+    # Vertices
+    triVerts = [[0,0,0],[-2,1,0],[-2,-1,0]]
+
+    # Translate such that centroid is at center
+    centroid = [0.,0.,0.]
+    for tv in triVerts:
+        for i in range(3):
+            centroid[i] += float(tv[i]) / 3.
+    print(centroid)
+    for tv in triVerts:
+        for i in range(3):
+            tv[i] -= centroid[i]
+
+    # add drawable and soft body
+    cScene.AddDrawableTri('tri1',                       # VAO key
+                          triVerts,                     # verts
+                          [0,0],                        # pos
+                          [1,1],                        # scale
+                          [0,0,1,1],                    # color
+                          0 )                           # rotation
+
+    # Kind of a pain
+    cScene.AddSoftBody(pylShape.Triangle,
+                       [0, 0],
+                       {'aX' : triVerts[0][0], 'aY' :  triVerts[0][1],
+                        'bX' : triVerts[1][0],  'bY' : triVerts[1][1],
+                        'cX' : triVerts[2][0],  'cY' : triVerts[2][1]})
 
     # Input handling
 
