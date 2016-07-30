@@ -12,8 +12,8 @@ public:
 		NONE
 	};
 	Camera();
-	void InitOrtho( float xMin, float xMax, float yMin, float yMax );
-	void InitPersp( float fovy, float aspect, float near, float far );
+	void InitOrtho( int nScreenWidth, int nScreenHeight, float xMin, float xMax, float yMin, float yMax );
+	void InitPersp( int nScreenWidth, int nScreenHeight, float fovy, float aspect, float near, float far );
 
 	void ResetRot();
 	void ResetPos();
@@ -21,6 +21,9 @@ public:
 	void ResetProj();
 	void Reset();
 
+	int GetScreenWidth() const;
+	int GetScreenHeight() const;
+	float GetAspectRatio() const;
 	vec3 GetView() const;
 	vec3 GetPos() const;
 	fquat GetRot() const;
@@ -38,6 +41,8 @@ public:
 
 private:
 	Type m_eType;
+	int m_nScreenWidth;
+	int m_nScreenHeight;
 	quatvec m_qvTransform;
 	mat4 m_m4Proj;
 

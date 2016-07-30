@@ -84,6 +84,20 @@ class Plane:
         self.d = d
         self.idx = cScene.AddCollisionPlane(N, d)
 
+def CentroidToOrigin(verts):
+    N = len(verts)
+    D = len(verts[0])
+    if not(all(len(verts[i]) == D for i in range(N))):
+        raise RuntimeError('poorly formed vertex list')
+    centroid = [0. for j in range(D)]
+    divFactor = 1./N
+    for i in range(N):
+        for j in range(D):
+            centroid[j] += divFactor * verts[i][j]
+    for i in range(N):
+        for j in range(D):
+            verts[i][j] -= centroid[j]
+
 # Global containers
 g_liEnts = []
 g_liPlanes = []
@@ -94,12 +108,15 @@ def Initialize(pScene):
     # construct pyl scene
     cScene = pylScene.Scene(pScene)
 
+    screenDims = (800, 800)
+    worldDims = (-10., 10, -10., 10)
+
     # init scene display
     if cScene .InitDisplay('SimpleRB1', [.1,.1,.1,1.],{
         'posX' : sdl2.video.SDL_WINDOWPOS_UNDEFINED,
         'posY' : sdl2.video.SDL_WINDOWPOS_UNDEFINED,
-        'width' : 800,
-        'height' : 800,
+        'width' : screenDims[0],
+        'height' : screenDims[1],
         'flags' : sdl2.video.SDL_WINDOW_OPENGL | sdl2.video.SDL_WINDOW_SHOWN,
         'glMajor' : 3,
         'glMinor' : 0,
@@ -116,7 +133,7 @@ def Initialize(pScene):
     # Set up camera
     pylCamera.SetCamMatHandle(cShader.GetHandle('u_PMV'))
     cCamera = pylCamera.Camera(cScene.GetCameraPtr())
-    cCamera.InitOrtho(-10., 10, -10., 10)
+    cCamera.InitOrtho(*(screenDims+worldDims))
 
     # Set up static drawable handle
     pylDrawable.SetPosHandle(cShader.GetHandle('a_Pos'))
@@ -134,17 +151,17 @@ def Initialize(pScene):
         drScale = [1,1],
         drColor = [1,1,1,1]))
 
-    g_liEnts.append(Entity(cScene,
-        rbPrim = pylShape.Circle,
-        rbPos = [-3,0],
-        rbVel = [-5,0],
-        rbMass = 1,
-        rbElasticity = 1,
-        rbDetails = {'r' : .5},
-        drIQMFile = '../models/circle.iqm',
-        drPos = [0,0],
-        drScale = [1,1],
-        drColor = [1,1,1,1]))
+    #g_liEnts.append(Entity(cScene,
+    #    rbPrim = pylShape.Circle,
+    #    rbPos = [-3,0],
+    #    rbVel = [-5,0],
+    #    rbMass = 1,
+    #    rbElasticity = 1,
+    #    rbDetails = {'r' : .5},
+    #    drIQMFile = '../models/circle.iqm',
+    #    drPos = [0,0],
+    #    drScale = [1,1],
+    #    drColor = [1,1,1,1]))
 
     # Create walls (planes)
     walls = [[1., 0.], [-1., 0.], [0., 1.], [0., -1.]]
@@ -153,37 +170,25 @@ def Initialize(pScene):
         g_liPlanes.append(Plane(cScene, N, d))
 
     # Testing triangle drawables
-    # Vertices
+    # Vertices, translated such that centroid is at 0
     triVerts = [[0,0,0],[-2,1,0],[-2,-1,0]]
-
-    # Translate such that centroid is at center
-    centroid = [0.,0.,0.]
-    for tv in triVerts:
-        for i in range(3):
-            centroid[i] += float(tv[i]) / 3.
-    print(centroid)
-    for tv in triVerts:
-        for i in range(3):
-            tv[i] -= centroid[i]
+    CentroidToOrigin(triVerts)
 
     # add drawable and soft body
-    cScene.AddDrawableTri('tri1',                       # VAO key
-                          triVerts,                     # verts
-                          [0,0],                        # pos
-                          [1,1],                        # scale
-                          [0,0,1,1],                    # color
-                          0 )                           # rotation
+    ixTriDR = cScene.AddDrawableTri('tri1',      # VAO key
+                          triVerts,    # verts
+                          [0,0],       # pos
+                          [1,1],       # scale
+                          [0,0,1,1],   # color
+                          0 )          # rotation
 
     # Kind of a pain
-    cScene.AddSoftBody(pylShape.Triangle,
-                       [0, 0],
-                       {'aX' : triVerts[0][0], 'aY' :  triVerts[0][1],
-                        'bX' : triVerts[1][0],  'bY' : triVerts[1][1],
-                        'cX' : triVerts[2][0],  'cY' : triVerts[2][1]})
+    ixTriSB = cScene.AddSoftBody(pylShape.Triangle, [0, 0], { 'aX' : triVerts[0][0], 'aY' : triVerts[0][1],
+                                                    'bX' : triVerts[1][0], 'bY' : triVerts[1][1],
+                                                    'cX' : triVerts[2][0], 'cY' : triVerts[2][1]})
 
     # Input handling
-
-    # Quit function, triggered bye scape
+    # Quit function, triggered by escape
     def fnQuitScene(btn, keyMgr):
         nonlocal cScene
         cScene.SetQuitFlag(True)
@@ -201,10 +206,27 @@ def Initialize(pScene):
         cScene.SetPauseCollision(not(cScene.GetPauseCollision()))
     btnPlayPauseCollision = InputManager.Button(sdl2.keycode.SDLK_SPACE, fnUp = fnPlayPauseCollision)
 
+    def fnMotion(mouseMgr):
+        nonlocal cScene, cCamera, worldDims, ixTriSB, ixTriDR
+        fWidth = float(cCamera.GetScreenWidth())
+        fHeight = float(cCamera.GetScreenHeight())
+        nrmScreenPos = [p / f for p, f in zip(mouseMgr.mousePos, [fWidth, fHeight])]
+        nrmScreenPos[1] = 1. - nrmScreenPos[1]
+        
+        worldPos = [0., 0.]
+        worldPos[0] = worldDims[0] + nrmScreenPos[0] * (worldDims[1]-worldDims[0])
+        worldPos[1] = worldDims[2] + nrmScreenPos[1] * (worldDims[3]-worldDims[2])
+
+        sb = pylShape.Shape(cScene.GetSoftBody2D(ixTriSB))
+        dr = pylDrawable.Drawable(cScene.GetDrawable(ixTriDR))
+        sb.SetCenterPos(worldPos)
+        dr.SetPos2D(sb.Position())
+    mouseMgr = InputManager.MouseManager([], fnMotion = fnMotion)
+
     # Create input manager (no mouse for now)
     global g_InputManager
     keyManager = InputManager.KeyboardManager([btnQuitEsc, btnShowHideContacts, btnPlayPauseCollision])
-    g_InputManager = InputManager.InputManager(cScene, keyManager, None)
+    g_InputManager = InputManager.InputManager(cScene, keyManager, mouseMgr)
 
 # Update scene and draw
 def Update(pScene):

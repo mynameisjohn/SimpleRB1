@@ -38,6 +38,7 @@ struct Shape : public EntComponent
 
 	glm::vec2 Position() const;
 	EType Type() const;
+	void SetCenterPos( glm::vec2 v2Pos );
 };
 
 // Useful typedef

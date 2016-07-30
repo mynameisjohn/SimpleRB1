@@ -42,6 +42,10 @@ Shape::Shape( glm::vec2 v2C ) :
 	v2Center( v2C )
 {}
 
+void Shape::SetCenterPos( glm::vec2 v2Pos )
+{
+	v2Center = v2Pos;
+}
 
 vec2 Shape::Position() const
 {

@@ -88,8 +88,11 @@ bool ExposeCamera()
 	CHECK_PYL_PTR;
 
 	AddClassToMod( pModDef, Camera );
-	AddMemFnToMod( pModDef, Camera, InitOrtho, void, float, float, float, float );
-	AddMemFnToMod( pModDef, Camera, InitPersp, void, float, float, float, float );
+	AddMemFnToMod( pModDef, Camera, InitOrtho, void, int, int, float, float, float, float );
+	AddMemFnToMod( pModDef, Camera, InitPersp, void, int, int, float, float, float, float );
+	AddMemFnToMod( pModDef, Camera, GetAspectRatio, float );
+	AddMemFnToMod( pModDef, Camera, GetScreenWidth, int );
+	AddMemFnToMod( pModDef, Camera, GetScreenHeight, int );
 
 	pModDef->RegisterFunction<struct st_fnCamSetProjH>( "SetCamMatHandle", make_function( Camera::SetCamMatHandle ) );
 
@@ -134,6 +137,7 @@ bool ExposeShape()
 
 	AddMemFnToMod( pModDef, Shape, Position, vec2 );
 	AddMemFnToMod( pModDef, Shape, Type, EType );
+	AddMemFnToMod( pModDef, Shape, SetCenterPos, void, vec2);
 
 	pModDef->SetCustomModuleInit( [] ( pyl::Object obModule )
 	{

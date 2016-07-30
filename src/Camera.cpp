@@ -1,23 +1,46 @@
 #include "Camera.h"
 
+#include <algorithm>
+
 // Declare static shader var
 /*static*/ GLint Camera::s_CamMatHandle;
 
 // This comes up enough
 using glm::normalize;
 
-void Camera::InitOrtho( float xMin, float xMax, float yMin, float yMax )
+void Camera::InitOrtho( int nScreenWidth, int nScreenHeight, float xMin, float xMax, float yMin, float yMax )
 {
 	Reset();
 	m_eType = Type::ORTHO;
+	m_nScreenWidth = std::max( 0, nScreenWidth );
+	m_nScreenHeight = std::max( 0, nScreenHeight );
 	m_m4Proj = glm::ortho( xMin, xMax, yMin, yMax );
 }
 
-void Camera::InitPersp( float fovy, float aspect, float near, float far )
+void Camera::InitPersp( int nScreenWidth, int nScreenHeight, float fovy, float aspect, float near, float far )
 {
 	Reset();
 	m_eType = Type::PERSP;
+	m_nScreenWidth = std::max( 0, nScreenWidth );
+	m_nScreenWidth = std::max( 0, nScreenHeight );
 	m_m4Proj = glm::perspective( fovy, aspect, near, far );
+}
+
+int Camera::GetScreenWidth() const
+{
+	return m_nScreenWidth;
+}
+
+int Camera::GetScreenHeight() const
+{
+	return m_nScreenHeight;
+}
+
+float Camera::GetAspectRatio() const
+{
+	if ( m_nScreenHeight > 0 )
+		return float( m_nScreenWidth ) / float( m_nScreenHeight );
+	return 0.f;
 }
 
 // See how this would affect a vector pointing out in z
@@ -34,6 +57,8 @@ Camera::Camera()
 void Camera::Reset()
 {
 	m_eType = Type::NONE;
+	m_nScreenWidth = 0;
+	m_nScreenHeight = 0;
 	ResetTransform();
 	ResetProj();
 }

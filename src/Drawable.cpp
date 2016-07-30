@@ -65,14 +65,6 @@ bool Drawable::Init( std::string strName, std::array<glm::vec3, 3> triVerts, glm
 				return false;
 			}
 
-			// Center triangle verts around centroid
-			// for clean rotation (python should do this)
-			//vec3 v3Centroid;
-			//for ( vec3 v : triVerts )
-			//	v3Centroid += v / 3.f;
-			//for ( vec3& v : triVerts )
-			//	v -= v3Centroid;
-
 			// If successful, bind position attr and upload data
 			GLuint bufIdx( 0 );
 			fillVBO( vboBuf[bufIdx++], s_PosHandle, triVerts.data(), 3 * sizeof( glm::vec3 ), 3, GL_FLOAT );

@@ -1,6 +1,7 @@
 # I'd like to make this agnostic of
 # SDL events, but for now this works
 import sdl2.events
+import abc
 
 # Button class, own an identifier (code)
 # and a callback that is called when the
@@ -46,83 +47,98 @@ class Button:
         if fnToggle is not None:
             fnToggle(self, mgr)
 
-class KeyboardManager:
-    def __init__(self, liKeys):
-        if not(all(isinstance(k, Button) for k in liKeys)):
+class ButtonManager:
+    def __init__(self, liButtons):
+        if not(all(isinstance(k, Button) for k in liButtons)):
             raise TypeError('Error: All keys registered must be Buttons')
+        
+        self.diButtons = {b.code : b for b in liButtons}
+        self.setSDLEventsHandled = set()
 
-        # diKeys is initialized with the registered buttons
-        # but will store bools for unregistered keys
-        self.diKeys = {k.code : k for k in liKeys}
+    def GetButton(self, btnCode):
+        if btnCode in self.diButtons.keys():
+            if isinstance(self.diButtons[btnCode], Button):
+                return self.diButtons[btnCode]
+        return None
+
+    def IsButtonPressed(self, btnCode):
+        if btnCode in self.diButtons.keys():
+            if isinstance(self.diButtons[btnCode], Button):
+                return self.diButtons[btnCode].state
+            else:
+                return bool(self.diButtons[btnCode])
+        return False
+
+    @abc.abstractmethod
+    def HandleEvent(self, sdlEvent):
+        return sdlEvent.type in self.setSDLEventsHandled
+
+class KeyboardManager(ButtonManager):
+    def __init__(self, liKeys):
+        ButtonManager.__init__(self, liKeys)
+        self.setSDLEventsHandled = {sdl2.events.SDL_KEYDOWN, sdl2.events.SDL_KEYUP}
 
     # Handle an SDL2 key event
-    def HandleKey(self, keyEvent):
+    def HandleEvent(self, sdlEvent):
+        # check set
+        if not(ButtonManager.HandleEvent(self, sdlEvent)):
+            return False
+        # unpack the key event
+        keyEvent = sdlEvent.key
         # Get the keycode
         keyCode = keyEvent.keysym.sym
         # I only care about non-repeated for now
         if keyEvent.repeat == False:
             # If we have this in our dict
-            if keyCode in self.diKeys.keys():
+            if keyCode in self.diButtons.keys():
                 # If it's a registered button
-                if isinstance(self.diKeys[keyCode], Button):
+                if isinstance(self.diButtons[keyCode], Button):
                     # Delegate to the button
-                    self.diKeys[keyCode].Toggle(self)
+                    self.diButtons[keyCode].Toggle(self)
                 # Otherwise it should be a bool, so flip it
                 else:
-                    self.diKeys[keyCode] = not(self.diKeys[keyCode])
+                    self.diButtons[keyCode] = not(self.diButtons[keyCode])
             # If it's new and it's a keydown event, add a bool to the dict
             elif keyEvent.type == sdl2.events.SDL_KEYDOWN:
-                self.diKeys[keyCode] = True
+                self.diButtons[keyCode] = True
 
-    # If a button was registered, return it, otherwise return None
-    def GetButton(self, keyCode):
-        if keyCode in self.diKeyStates.keys():
-            if isinstance(self.diKeys[keyCode], Button):
-                return self.diKeyStates[keyCode]
-        return None
-
-    # If a button was registered return it's state
-    # Otherwise if we have it return the bool, else False
-    def IsKeyDown(self, keyCode):
-        # If we have it in our button dict, return that
-        if self.GetButton(keyCode) is not None:
-            return self.GetButton(keyCode).state
-        # If we have it as a bool, return that
-        elif keyCode in self.diKeyStates.keys():
-            return self.diKeyStates[keyCode]
-        # If we've never seen it, I guess it's not down?
-        return False
+        return True
 
 # Mouse manager, handles motion and lb/rb buttons
-class MouseManager:
-    def __init__(self, liButtons, motionCallback = None):
+class MouseManager(ButtonManager):
+    def __init__(self, liButtons, **kwargs):
+        ButtonManager.__init__(self, liButtons)
+        self.setSDLEventsHandled = {sdl2.events.SDL_MOUSEBUTTONUP, sdl2.events.SDL_MOUSEBUTTONDOWN,
+                                    sdl2.events.SDL_MOUSEWHEEL, sdl2.events.SDL_MOUSEMOTION}
+
         # initial mouse pos
         self.mousePos = [0, 0]
 
-        # Store buttons
-        self.diButtons = {m.code : m for m in liButtons}
-
         # Better be a function if provided
-        if hasattr(motionCallback, '__call__'):
-            self.motionCallback = motionCallback
+        if 'fnMotion' in kwargs.keys():
+            if hasattr(kwargs['fnMotion'], '__call__'):
+                self.fnMotion = kwargs['fnMotion']
         else:
-            self.motionCallback = None
+            self.fnMotion = None
      
     # Handle sdl2 mouse and motion events   
-    def HandleMouse(self, sdlEvent):
+    def HandleEvent(self, sdlEvent):
+        if not(ButtonManager.HandleEvent(self, sdlEvent)):
+            return False 
+
         # buttons
-        if (sdlEvent.type == sdl2.events.SDL_MOUSEBUTTONUP or
-                    sdlEvent.type == sdl2.events.SDL_MOUSEBUTTONDOWN):
+        if (sdlEvent.type == sdl2.events.SDL_MOUSEBUTTONUP or sdlEvent.type == sdl2.events.SDL_MOUSEBUTTONDOWN):
             btn = sdlEvent.button.button
             if btn in self.diButtons.keys():
                 self.diButtons[btn].Toggle(self)
-
         # motion
         elif sdlEvent.type == sdl2.events.SDL_MOUSEMOTION:
             m = sdlEvent.motion
             self.mousePos = [m.x, m.y]
-            if self.motionCallback is not None:
-                self.motionCallback(self)
+            if self.fnMotion is not None:
+                self.fnMotion(self)
+
+        return True
 
 # Input manager, owns a mouse and keyboard handler
 # as well as reference to C++ scene class (needed?)
@@ -140,13 +156,8 @@ class InputManager:
 
         # Give key events to the keyboard manager
         if self.keyMgr is not None:
-            if (sdlEvent.type == sdl2.events.SDL_KEYDOWN or
-                    sdlEvent.type == sdl2.events.SDL_KEYUP):
-                self.keyMgr.HandleKey(sdlEvent.key)
+            self.keyMgr.HandleEvent(sdlEvent)
 
         # And mouse events to the mouse manager (will get motion and button)
         if self.mouseMgr is not None:
-            if (sdlEvent.type == sdl2.events.SDL_MOUSEBUTTONUP or
-                    sdlEvent.type == sdl2.events.SDL_MOUSEBUTTONDOWN or
-                    sdlEvent.type == sdl2.events.SDL_MOUSEMOTION):
-                self.mouseMgr.HandleMouse(sdlEvent)
+            self.mouseMgr.HandleEvent(sdlEvent)

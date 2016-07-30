@@ -320,20 +320,24 @@ bool IsOverlapping( AABB* pA, AABB* pB )
 
 bool IsOverlapping( AABB * pAABB, Triangle * pT )
 {
+	vec2 vA = pT->v2A + pT->v2Center;
+	vec2 vB = pT->v2B + pT->v2Center;
+	vec2 vC = pT->v2C + pT->v2Center;
+
 	// Test box axes - treat triangle as a box, return false if separating axis
-	if ( std::max( { pT->v2A.x, pT->v2B.x , pT->v2C.x } ) < pAABB->Left() )
+	if ( std::max( { vA.x, vB.x , vC.x } ) < pAABB->Left() )
 		return false;
-	if ( std::min( { pT->v2A.x, pT->v2B.x , pT->v2C.x } ) > pAABB->Right() )
+	if ( std::min( { vA.x, vB.x , vC.x } ) > pAABB->Right() )
 		return false;
-	if ( std::max( { pT->v2A.y, pT->v2B.y , pT->v2C.y } ) < pAABB->Bottom() )
+	if ( std::max( { vA.y, vB.y , vC.y } ) < pAABB->Bottom() )
 		return false;
-	if ( std::min( { pT->v2A.y, pT->v2B.y , pT->v2C.y } ) > pAABB->Top() )
+	if ( std::min( { vA.y, vB.y , vC.y } ) > pAABB->Top() )
 		return false;
 
 	// If that didn't work, make box center the origin
-	vec2 vA = pT->v2A - pAABB->v2Center;
-	vec2 vB = pT->v2B - pAABB->v2Center;
-	vec2 vC = pT->v2C - pAABB->v2Center;
+	vA = vA - pAABB->v2Center;
+	vB = vB - pAABB->v2Center;
+	vC = vC - pAABB->v2Center;
 
 	// For every triangle face
 	for ( vec2 f : { vA - vC, vB - vA, vC - vB} )
