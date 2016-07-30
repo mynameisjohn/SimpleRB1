@@ -173,7 +173,7 @@ bool IsOverlapping( Circle * pCirc, AABB * pAABB )
 
 bool IsOverlapping( Circle * pCirc, Triangle * pT )
 {
-	vec2 p = ClosestPtToTriangle( pT, pCirc->v2Center );
+	vec2 p = ClosestPtToTriangle( pT->v2A + pT->v2Center, pT->v2B + pT->v2Center, pT->v2C + pT->v2Center, pCirc->v2Center );
 	float f1 = glm::distance2( pCirc->v2Center, p );
 	return f1 <= powf( pCirc->fRadius, 2 );
 }

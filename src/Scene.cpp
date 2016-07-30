@@ -85,12 +85,12 @@ void Scene::Update()
 		float fTotalEnergy( 0.f );
 
 		// Integrate objects
-		//for ( RigidBody2D& rb : m_vRigidBodies )
-		//	rb.Integrate( g_fTimeStep );
+		for ( RigidBody2D& rb : m_vRigidBodies )
+			rb.Integrate( g_fTimeStep );
 
 		// Get out if there's less than 2
-		//if ( m_vRigidBodies.size() < 2 )
-		//	return;
+		if ( m_vRigidBodies.size() < 2 )
+			return;
 
 		// For every plane
 		for ( Plane& P : m_vCollisionPlanes )

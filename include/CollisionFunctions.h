@@ -63,4 +63,4 @@ glm::vec2 GetNormal( AABB * pAABB, int idx );
 
 ////////////////////////////////////////////////////////////////////////////
 
-vec2 ClosestPtToTriangle( const Triangle * pT, vec2 p );
+vec2 ClosestPtToTriangle( vec2 vA, vec2 vB, vec2 vC, vec2 p );

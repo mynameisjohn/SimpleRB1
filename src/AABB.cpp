@@ -320,41 +320,36 @@ bool IsOverlapping( AABB* pA, AABB* pB )
 
 bool IsOverlapping( AABB * pAABB, Triangle * pT )
 {
-	vec2 vA = pT->v2A + pT->v2Center;
-	vec2 vB = pT->v2B + pT->v2Center;
-	vec2 vC = pT->v2C + pT->v2Center;
-
 	// Test box axes - treat triangle as a box, return false if separating axis
-	if ( std::max( { vA.x, vB.x , vC.x } ) < pAABB->Left() )
+	if ( pT->Right() < pAABB->Left() )
 		return false;
-	if ( std::min( { vA.x, vB.x , vC.x } ) > pAABB->Right() )
+	if ( pT->Left() > pAABB->Right() )
 		return false;
-	if ( std::max( { vA.y, vB.y , vC.y } ) < pAABB->Bottom() )
+	if ( pT->Top() < pAABB->Bottom() )
 		return false;
-	if ( std::min( { vA.y, vB.y , vC.y } ) > pAABB->Top() )
+	if ( pT->Bottom() > pAABB->Top() )
 		return false;
 
 	// If that didn't work, make box center the origin
-	vA = vA - pAABB->v2Center;
-	vB = vB - pAABB->v2Center;
-	vC = vC - pAABB->v2Center;
+	std::array<vec2, 3> av2Verts = pT->Verts();
+	for ( vec2& v : av2Verts )
+		v -= pAABB->v2Center;
 
-	// For every triangle face
-	for ( vec2 f : { vA - vC, vB - vA, vC - vB} )
+	// Walk the face edges
+	for ( vec2& e : pT->Edges() )
 	{
 		// See if the face normal is a separating axis
-		// (I know this isn't normalized, I think it's OK)
-		vec2 n = perp( f );
+		vec2 n = perp( e );
 
 		// The box extents along the normal
-		float r = fabs( glm::dot( n, pAABB->v2HalfDim ) );
+		float r = glm::dot( glm::abs( n ), pAABB->v2HalfDim );
 
 		// The triangle extents along the normal
-		float pA = glm::dot( vA, n );
-		float pB = glm::dot( vB, n );
-		float pC = glm::dot( vC, n );
+		float pA = glm::dot( av2Verts[0], n );
+		float pB = glm::dot( av2Verts[1], n );
+		float pC = glm::dot( av2Verts[2], n );
 
-		// If either is a separating axis, get out
+		// If n is a separating axis, get out
 		if ( std::max( { pA, pB, pC } ) < -r )
 			return false;
 		if ( std::min( { pA, pB, pC } ) > r )

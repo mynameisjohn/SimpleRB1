@@ -259,34 +259,34 @@ vec2 projectOnEdge( vec2 p, vec2 e0, vec2 e1 )
 	return e0 + v * clamp( t, 0.f, 1.f );
 }
 
-vec2 ClosestPtToTriangle( const Triangle * const pT, vec2 p )
+vec2 ClosestPtToTriangle( vec2 vA, vec2 vB, vec2 vC, vec2 p )
 {
 	// Face edges
-	vec2 ab = pT->v2B - pT->v2A, ac = pT->v2C - pT->v2A, bc = pT->v2C - pT->v2B;
+	vec2 ab = vB - vA, ac = vC - vA, bc = vC - vB;
 
-	float s_ab = glm::dot( p - pT->v2A, ab );		// unnormalized along ab
-	float s_ba = glm::dot( p - pT->v2B, -ab );	// unnormalized along ba
+	float s_ab = glm::dot( p - vA, ab );		// unnormalized along ab
+	float s_ba = glm::dot( p - vB, -ab );	// unnormalized along ba
 
-	float t_bc = glm::dot( p - pT->v2B, bc );		// unnormalized along bc
-	float t_cb = glm::dot( p - pT->v2C, -bc );	// and along cb
+	float t_bc = glm::dot( p - vB, bc );		// unnormalized along bc
+	float t_cb = glm::dot( p - vC, -bc );	// and along cb
 
-	float u_ac = glm::dot( p - pT->v2A, ac );		// along ac
-	float u_ca = glm::dot( p - pT->v2C, -ac );	// along ca
+	float u_ac = glm::dot( p - vA, ac );		// along ac
+	float u_ca = glm::dot( p - vC, -ac );	// along ca
 
 	// If the unnormalized param from a to b
 	// and from a to c is negative, a is closest
 	if ( s_ab <= 0 && u_ac <= 0 )
-		return pT->v2A;
+		return vA;
 
 	// If the unnormalized param from b to a
 	// and from b to c is negative, b is closest
 	if ( s_ba <= 0 && t_bc <= 0 )
-		return pT->v2B;
+		return vB;
 
 	// If the unnormalized param from c to a
 	// and from c to b is negative, c is closest
 	if ( u_ca <= 0 && t_cb <= 0 )
-		return pT->v2C;
+		return vC;
 
 	// If it wasn't one of those, check the edges
 	// For each face edge, create a new triangle
@@ -294,41 +294,70 @@ vec2 ClosestPtToTriangle( const Triangle * const pT, vec2 p )
 	// signed area (positive half determined by n)
 	float n = cross2D( ab, ac );
 
-
 	// If proj(p, AB) is between A and B (both params positive)
 	// check the signed area of pab, return proj if negative
 	if ( s_ab > 0 && s_ba > 0 )
 	{
-		float sA_ab = n * cross2D( pT->v2A - p, pT->v2B - p );
+		float sA_ab = n * cross2D( vA - p, vB - p );
 		if ( sA_ab <= 0 )
 		{
 			float s = s_ab / (s_ab + s_ba);
-			return pT->v2A + s * ab;
+			return vA + s * ab;
 		}
 	}
 
 	// BC
 	if ( t_bc > 0 && t_cb > 0 )
 	{
-		float sA_bc = n * cross2D( pT->v2B - p, pT->v2C - p );
+		float sA_bc = n * cross2D( vB - p, vC - p );
 		if ( sA_bc <= 0 )
 		{
 			float t = t_bc / (t_bc + t_cb);
-			return pT->v2B + t * bc;
+			return vB + t * bc;
 		}
 	}
 
 	// CA (note that ac goes from a to c, so we go from v2A)
 	if ( u_ac > 0 && u_ca > 0 )
 	{
-		float sA_ca = n * cross2D( pT->v2C - p, pT->v2A - p );
+		float sA_ca = n * cross2D( vC - p, vA - p );
 		if ( sA_ca <= 0 )
 		{
 			float u = u_ac / (u_ac + u_ca);
-			return pT->v2A + u * ac;
+			return vA + u * ac;
 		}
 	}
 
 	// Inside triangle, return p
 	return p;
+}
+
+float Triangle::Left() const
+{
+	return std::min( { v2A.x, v2B.x, v2C.x } ) + v2Center.x;
+}
+
+float Triangle::Right() const
+{
+	return std::max( { v2A.x, v2B.x, v2C.x } ) + v2Center.x;
+}
+
+float Triangle::Bottom() const
+{
+	return std::min( { v2A.y, v2B.y, v2C.y } ) + v2Center.y;
+}
+
+float Triangle::Top() const
+{
+	return std::max( { v2A.y, v2B.y, v2C.y } ) + v2Center.y;
+}
+
+std::array<glm::vec2, 3> Triangle::Verts() const
+{
+	return{ v2A + v2Center, v2B + v2Center, v2C + v2Center };
+}
+
+std::array<glm::vec2, 3> Triangle::Edges() const
+{
+	return{ v2B - v2A, v2C - v2B, v2A - v2C,   };
 }

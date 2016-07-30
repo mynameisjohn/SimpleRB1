@@ -110,5 +110,11 @@ struct Triangle : public Shape
 	Triangle() = delete;
 
 	static SoftBody2D Create( glm::vec2 c, glm::vec2 A, glm::vec2 B, glm::vec2 C );
+
+	float Left() const;
+	float Right() const;
+	float Top() const;
+	float Bottom() const;
+	std::array<glm::vec2, 3> Verts() const;
 	std::array<glm::vec2, 3> Edges() const;
 };

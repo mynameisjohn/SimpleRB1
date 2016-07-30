@@ -141,7 +141,7 @@ def Initialize(pScene):
     # create entities, just two random ones for now
     g_liEnts.append(Entity(cScene,
         rbPrim = pylShape.AABB,
-        rbPos = [6,6],
+        rbPos = [3,6],
         rbVel = [-5,0],
         rbMass = 1,
         rbElasticity = 1,
@@ -151,17 +151,17 @@ def Initialize(pScene):
         drScale = [1,1],
         drColor = [1,1,1,1]))
 
-    #g_liEnts.append(Entity(cScene,
-    #    rbPrim = pylShape.Circle,
-    #    rbPos = [-3,0],
-    #    rbVel = [-5,0],
-    #    rbMass = 1,
-    #    rbElasticity = 1,
-    #    rbDetails = {'r' : .5},
-    #    drIQMFile = '../models/circle.iqm',
-    #    drPos = [0,0],
-    #    drScale = [1,1],
-    #    drColor = [1,1,1,1]))
+    g_liEnts.append(Entity(cScene,
+        rbPrim = pylShape.Circle,
+        rbPos = [-3,0],
+        rbVel = [-5,0],
+        rbMass = 1,
+        rbElasticity = 1,
+        rbDetails = {'r' : .5},
+        drIQMFile = '../models/circle.iqm',
+        drPos = [0,0],
+        drScale = [1,1],
+        drColor = [1,1,1,1]))
 
     # Create walls (planes)
     walls = [[1., 0.], [-1., 0.], [0., 1.], [0., -1.]]
