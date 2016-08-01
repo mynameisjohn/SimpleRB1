@@ -154,9 +154,9 @@ Contact GetSpecContact( Circle * pCirc, Plane * pPlane )
 
 bool IsOverlapping( Circle * pA, Circle * pB )
 {
-	float dist2 = glm::distance2( pA->v2Center, pB->v2Center );
-	float totalRadius = pA->Radius() + pB->Radius();
-	return dist2 <= totalRadius;
+	float fDist2 = glm::distance2( pA->v2Center, pB->v2Center );
+	float fTotalRadius = pA->Radius() + pB->Radius();
+	return fDist2 <= powf( fTotalRadius, 2 );
 }
 
 ////////////////////////////////////////////////////////////////////////////
