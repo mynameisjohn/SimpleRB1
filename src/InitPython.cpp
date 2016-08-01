@@ -110,6 +110,8 @@ bool ExposeDrawable()
 	AddMemFnToMod( pModDef, Drawable, SetPos2D, void, vec2 );
 	AddMemFnToMod( pModDef, Drawable, SetTransform, void, quatvec );
 	AddMemFnToMod( pModDef, Drawable, SetColor, void, glm::vec4 );
+	AddMemFnToMod( pModDef, Drawable, GetIsActive, bool );
+	AddMemFnToMod( pModDef, Drawable, SetIsActive, void, bool );
 
 	// The macro doesn't work out for static functions...
 	auto SetPosHandle = Drawable::SetPosHandle;
@@ -138,6 +140,8 @@ bool ExposeShape()
 	AddMemFnToMod( pModDef, Shape, Position, vec2 );
 	AddMemFnToMod( pModDef, Shape, Type, EType );
 	AddMemFnToMod( pModDef, Shape, SetCenterPos, void, vec2);
+	AddMemFnToMod( pModDef, Shape, GetIsActive, bool );
+	AddMemFnToMod( pModDef, Shape, SetIsActive, void, bool );
 
 	pModDef->SetCustomModuleInit( [] ( pyl::Object obModule )
 	{

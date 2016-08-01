@@ -205,12 +205,12 @@ public:
 		const char * IQM_MAGIC = "INTERQUAKEMODEL";
 
 		fp = fopen( szFilename, "rb" );
-		IQMASSERT( fp, "Error: Invalid filename provided to IQM File constructor!" );
+		IQMASSERT( fp != nullptr, "Error: Invalid filename provided to IQM File constructor!" );
 
 		// Check the file size
 		fseek( fp, 0, SEEK_END );
 		size_t uFileSize = ftell( fp );
-		IQMASSERT( uFileSize, "Error: Empty file provided to IQM File constructor!" );
+		IQMASSERT( uFileSize > 0, "Error: Empty file provided to IQM File constructor!" );
 
 		// Rewind
 		fseek( fp, 0, SEEK_SET );
@@ -230,7 +230,7 @@ public:
 		m_pHeader = (Header *) pDataBuf;
 
 		// Checks
-		IQMASSERT( m_pHeader, "No IQM Header loaded" );
+		IQMASSERT( m_pHeader != nullptr, "No IQM Header loaded" );
 		IQMASSERT( m_pHeader->version == IQM_VERSION, "IQM file version incorrect" );
 		IQMASSERT( strcmp( m_pHeader->magic, IQM_MAGIC ) == 0, "IQM File contained wrong magic number" );
 		IQMASSERT( (size_t) m_pHeader->filesize == uFileSize, "Error: Inconsistency with file sizes reported" );

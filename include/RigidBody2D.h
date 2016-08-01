@@ -22,6 +22,7 @@ struct Shape : public EntComponent
 		Triangle
 	};
 
+	bool bActive;		// If the shape is in the mix
 	EType eType;		// Primitive type
 	glm::vec2 v2Center;	// Center position
 
@@ -35,6 +36,9 @@ struct Shape : public EntComponent
 
 	Shape();
 	Shape( glm::vec2 v2C );
+
+	void SetIsActive( bool b );
+	bool GetIsActive() const;
 
 	glm::vec2 Position() const;
 	EType Type() const;

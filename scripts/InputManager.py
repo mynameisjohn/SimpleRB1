@@ -116,11 +116,18 @@ class MouseManager(ButtonManager):
 
         # Better be a function if provided
         if 'fnMotion' in kwargs.keys():
-            if hasattr(kwargs['fnMotion'], '__call__'):
-                self.fnMotion = kwargs['fnMotion']
+            fnMotion = kwargs['fnMotion']
+            if hasattr(fnMotion, '__call__'):
+                self.fnMotion = fnMotion
         else:
             self.fnMotion = None
-     
+        if 'fnWheel' in kwargs.keys():
+            fnWheel = kwargs['fnWheel']
+            if hasattr(fnWheel, '__call__'):
+                self.fnWheel = fnWheel
+        else:
+            self.fnWheel = None
+                 
     # Handle sdl2 mouse and motion events   
     def HandleEvent(self, sdlEvent):
         if not(ButtonManager.HandleEvent(self, sdlEvent)):
@@ -137,6 +144,11 @@ class MouseManager(ButtonManager):
             self.mousePos = [m.x, m.y]
             if self.fnMotion is not None:
                 self.fnMotion(self)
+        # wheel
+        elif sdlEvent.type == sdl2.events.SDL_MOUSEWHEEL:
+            if self.fnWheel is not None:
+                self.fnWheel(self, sdlEvent.wheel)
+
 
         return True
 

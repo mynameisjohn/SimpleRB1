@@ -11,6 +11,7 @@
 /*static*/ std::map<std::string, Drawable> Drawable::s_PrimitiveMap;
 
 Drawable::Drawable() :
+	m_bActive( false ),
 	m_VAO( 0 ),
 	m_nIdx( 0 ),
 	m_v2Scale( 1 ),
@@ -90,12 +91,23 @@ bool Drawable::Init( std::string strName, std::array<glm::vec3, 3> triVerts, glm
 	m_qvTransform = qvTransform;
 	m_v2Scale = v2Scale;
 	m_v4Color = v4Color;
+	m_bActive = true;
 
 	// Store the values from the static cache, return true
 	m_VAO = s_VAOCache[strName][0];
 	m_nIdx = s_VAOCache[strName][1];
 
 	return true;
+}
+
+void Drawable::SetIsActive( bool b )
+{
+	m_bActive = b;
+}
+
+bool Drawable::GetIsActive() const
+{
+	return m_bActive;
 }
 
 bool Drawable::Init( std::string strIqmSrcFile, glm::vec4 v4Color, quatvec qvTransform, glm::vec2 v2Scale )
@@ -166,6 +178,7 @@ bool Drawable::Init( std::string strIqmSrcFile, glm::vec4 v4Color, quatvec qvTra
 	m_qvTransform = qvTransform;
 	m_v2Scale = v2Scale;
 	m_v4Color = v4Color;
+	m_bActive = true;
 
 	// Store the values from the static cache, return true
 	m_VAO = s_VAOCache[strIqmSrcFile][0];

@@ -43,6 +43,9 @@ void Scene::Draw()
 	// Draw every Drawable
 	for ( Drawable& dr : m_vDrawables )
 	{
+		if ( dr.GetIsActive() == false )
+			continue;
+
 		mat4 PMV = P * dr.GetMV();
 		vec4 c = dr.GetColor();
 		glUniformMatrix4fv( pmvHandle, 1, GL_FALSE, glm::value_ptr( PMV ) );
@@ -85,19 +88,26 @@ void Scene::Update()
 		float fTotalEnergy( 0.f );
 
 		// Integrate objects
-		for ( RigidBody2D& rb : m_vRigidBodies )
-			rb.Integrate( g_fTimeStep );
+		//for ( RigidBody2D& rb : m_vRigidBodies )
+		//	if ( rb.GetIsActive() )
+		//		rb.Integrate( g_fTimeStep );
 
 		// Get out if there's less than 2
-		if ( m_vRigidBodies.size() < 2 )
-			return;
+		//if ( m_vRigidBodies.size() < 2 )
+		//	return;
 
 		// For every plane
 		for ( Plane& P : m_vCollisionPlanes )
 		{
+			if ( P.GetIsActive() == false )
+				continue;
+
 			// For every RB
 			for ( auto itOuter = m_vRigidBodies.begin(); itOuter != m_vRigidBodies.end(); ++itOuter )
 			{
+				if ( itOuter->GetIsActive() == false )
+					continue;
+
 				const float fGrav = 20.f;
 				itOuter->v2Force += -vec2( 0, fGrav );
 
@@ -107,6 +117,9 @@ void Scene::Update()
 				// Check every one against the other
 				for ( auto itInner = itOuter + 1; itInner != m_vRigidBodies.end(); ++itInner )
 				{
+					if ( itInner->GetIsActive() == false )
+						continue;
+
 					// Skip if both have negative mass
 					if ( itOuter->fMass < 0 && itInner->fMass < 0 )
 						continue;
@@ -121,6 +134,9 @@ void Scene::Update()
 				static size_t uOverlaps( 0 );
 				for ( SoftBody2D& sb : m_vSoftBodies )
 				{
+					if ( sb.GetIsActive() == false )
+						continue;
+
 					if ( IsOverlapping( &sb, &*itOuter ) )
 					{
 						std::cout << ++uOverlaps << std::endl;
@@ -257,7 +273,7 @@ int Scene::AddRigidBody( RigidBody2D::EType eType, glm::vec2 v2Vel, glm::vec2 v2
 int Scene::AddCollisionPlane( glm::vec2 N, float d )
 {
 	N = glm::normalize( N );
-	m_vCollisionPlanes.push_back( { N, d } );
+	m_vCollisionPlanes.push_back( { true, N, d } );
 	
 	// This function will add the drawable for now
 	const float fLarge = 1000.f;

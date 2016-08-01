@@ -34,10 +34,12 @@ RigidBody2D::RigidBody2D() :
 {}
 
 Shape::Shape() :
+	bActive( false ),
 	eType( EType::None )
 {}
 
 Shape::Shape( glm::vec2 v2C ) :
+	bActive( false ),
 	eType( EType::None ),
 	v2Center( v2C )
 {}
@@ -71,7 +73,18 @@ SoftBody2D Triangle::Create( glm::vec2 c, glm::vec2 A, glm::vec2 B, glm::vec2 C 
 	ret.v2A = A;
 	ret.v2B = B;
 	ret.v2C = C;
+	ret.bActive = true;
 	return ret;
+}
+
+void Shape::SetIsActive( bool b )
+{
+	bActive = b;
+}
+
+bool Shape::GetIsActive() const
+{
+	return bActive;
 }
 
 ///*static*/ RigidBody2D RigidBody2D::Create( glm::vec2 vel, glm::vec2 c, float mass, float elasticity )

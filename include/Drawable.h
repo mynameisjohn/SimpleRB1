@@ -49,9 +49,13 @@ public:
 	static bool AddPrimitive( std::string strPrimFile, glm::vec4 v4Color, quatvec qvTransform, glm::vec2 v2Scale );
 	static Drawable * GetPrimitive( std::string strPrimFile );
 	static bool DrawPrimitive( std::string strPrimFile );
-	
+
+	void SetIsActive( bool b );
+	bool GetIsActive() const;
+
 	using VAOData = std::array<GLuint, 2>;
 private:	
+	bool m_bActive;
 	GLuint m_VAO;
 	GLuint m_nIdx;
 	glm::vec2 m_v2Scale;

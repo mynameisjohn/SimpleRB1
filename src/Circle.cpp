@@ -14,6 +14,7 @@
 	RigidBody2D ret( vel, c, mass, elasticity );
 	ret.fRadius = fRadius;
 	ret.eType = RigidBody2D::EType::Circle;
+	ret.bActive = true;
 	return ret;
 }
 
@@ -24,6 +25,7 @@
 	SoftBody2D ret( c );
 	ret.fRadius = fRadius;
 	ret.eType = RigidBody2D::EType::Circle;
+	ret.bActive = true;
 	return ret;
 }
 
@@ -152,22 +154,18 @@ Contact GetSpecContact( Circle * pCirc, Plane * pPlane )
 
 bool IsOverlapping( Circle * pA, Circle * pB )
 {
-	float dist = glm::length( pA->v2Center - pB->v2Center );
+	float dist2 = glm::distance2( pA->v2Center, pB->v2Center );
 	float totalRadius = pA->Radius() + pB->Radius();
-	return (dist < totalRadius);
+	return dist2 <= totalRadius;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 
 bool IsOverlapping( Circle * pCirc, AABB * pAABB )
 {
-	float r = pCirc->Radius();
-	glm::vec2& C = pCirc->v2Center;
-	bool bX = (pAABB->Left() > C.x + r) || (pAABB->Right() < C.y - r) == false;
-	bool bY = (pAABB->Bottom() > C.y + r) || (pAABB->Top() < C.y - r);
-	return bX && bY;
+	vec2 ptClosest = pAABB->Clamp( pCirc->v2Center );
+	return glm::distance2( ptClosest, pCirc->v2Center ) <= powf( pCirc->Radius(), 2 );
 }
-
 
 ////////////////////////////////////////////////////////////////////////////
 

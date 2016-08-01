@@ -79,6 +79,7 @@ glm::vec2 AABB::GetFaceNormalFromPoint( const glm::vec2 p ) const
 	SoftBody2D ret( c );
 	ret.v2HalfDim = v2R;
 	ret.eType = EType::AABB;
+	ret.bActive = true;
 	return ret;
 }
 
@@ -89,6 +90,7 @@ glm::vec2 AABB::GetFaceNormalFromPoint( const glm::vec2 p ) const
 	SoftBody2D ret( vec2( x, y ) );
 	ret.v2HalfDim = vec2( w, h ) / 2.f;
 	ret.eType = EType::AABB;
+	ret.bActive = true;
 	return ret;
 }
 
@@ -99,6 +101,7 @@ glm::vec2 AABB::GetFaceNormalFromPoint( const glm::vec2 p ) const
 	RigidBody2D ret( vel, c, mass, elasticity );
 	ret.v2HalfDim = v2R;
 	ret.eType = EType::AABB;
+	ret.bActive = true;
 	return ret;
 }
 
@@ -109,6 +112,7 @@ glm::vec2 AABB::GetFaceNormalFromPoint( const glm::vec2 p ) const
 	RigidBody2D ret( vel, vec2( x, y ), mass, elasticity );
 	ret.v2HalfDim = vec2( w, h ) / 2.f;
 	ret.eType = EType::AABB;
+	ret.bActive = true;
 	return ret;
 }
 
@@ -336,7 +340,7 @@ bool IsOverlapping( AABB * pAABB, Triangle * pT )
 		v -= pAABB->v2Center;
 
 	// Walk the face edges
-	for ( vec2& e : pT->Edges() )
+	for ( const vec2& e : pT->Edges() )
 	{
 		// See if the face normal is a separating axis
 		vec2 n = perp( e );

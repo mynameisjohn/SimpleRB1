@@ -20,6 +20,9 @@ import pylRigidBody2D
 # My input manager class
 import InputManager
 
+import random
+import itertools
+
 # Used to construct ctypes sdl2 object
 # from pointer to object in C++
 import ctypes
@@ -30,7 +33,6 @@ def ctype_from_addr(capsule, type):
     if (addr != 0):
         return type.from_address(addr)
     raise RuntimeError('Error constructing ctype object, invalid capsule address')
-
 
 # Basic entity class, kind of gross at the moment
 # but all I need it to do is facilitate RB-Drawable talk
@@ -84,6 +86,41 @@ class Plane:
         self.d = d
         self.idx = cScene.AddCollisionPlane(N, d)
 
+class SoftEntity:
+    def __init__(self, cScene, ixSB, ixDR):
+        self.cScene = cScene
+        self.ixSB = ixSB
+        self.ixDR = ixDR
+
+    def GetSoftBody(self):
+        return pylShape.Shape(self.cScene.GetSoftBody2D(self.ixSB))
+
+    def GetDrawable(self):
+        return pylDrawable.Drawable(self.cScene.GetDrawable(self.ixDR))
+
+    def SetIsActive(self, bActive):
+        self.GetSoftBody().SetIsActive(bActive)
+        self.GetDrawable().SetIsActive(bActive)
+
+class MouseSoftBodyManager:
+    def __init__(self, cScene, liSoftEntities):
+        if not(all(isinstance(lse, SoftEntity) for lse in liSoftEntities)):
+            raise RuntimeError('poorly formed soft entity list')
+
+        self.cScene = cScene
+        self.liSoftEntities = liSoftEntities
+        for e in self.liSoftEntities:
+            e.SetIsActive(False)
+
+        self.entGen = itertools.cycle(self.liSoftEntities)
+        self.activeEnt = next(self.entGen)
+
+    def Advance(self, bActivateNext):
+        self.activeEnt.SetIsActive(False)
+        self.activeEnt = next(self.entGen)
+        if bActivateNext:
+            self.activeEnt.SetIsActive(bActivateNext)
+
 def CentroidToOrigin(verts):
     N = len(verts)
     D = len(verts[0])
@@ -102,6 +139,7 @@ def CentroidToOrigin(verts):
 g_liEnts = []
 g_liPlanes = []
 g_InputManager = InputManager.InputManager(None, None, None)
+g_SoftMouseManager = None
 
 # Initialize the scene
 def Initialize(pScene):
@@ -169,23 +207,40 @@ def Initialize(pScene):
     for N in walls:
         g_liPlanes.append(Plane(cScene, N, d))
 
-    # Testing triangle drawables
-    # Vertices, translated such that centroid is at 0
-    triVerts = [[0,0,0],[-2,1,0],[-2,-1,0]]
+    # Create soft body entities (that follow mouse))
+    liSoftEntities = []
+    # quad
+    ixSoftQuadDR = cScene.AddDrawableIQM('../models/quad.iqm', # VAO key
+                          [0,0],            # pos
+                          [1,1],            # scale
+                          [0,1,1,1],        # color
+                          0 )               # rotation
+    ixSoftQuadSB = cScene.AddSoftBody(pylShape.AABB, [0, 0], {'w' : 1, 'h' : 1})
+    liSoftEntities.append(SoftEntity(cScene, ixSoftQuadSB, ixSoftQuadDR))
+    # circle
+    ixSoftCircDR = cScene.AddDrawableIQM('../models/circle.iqm', # VAO key
+                          [0,0],            # pos
+                          [1,1],            # scale
+                          [0,1,1,1],        # color
+                          0 )               # rotation
+    ixSoftCircSB = cScene.AddSoftBody(pylShape.Circle, [0, 0], {'r' : .5})
+    liSoftEntities.append( SoftEntity(cScene, ixSoftCircSB, ixSoftCircDR))
+    # triangle
+    triVerts = [[0,0,0],[-2,-1,0],[-2,1,0]]
     CentroidToOrigin(triVerts)
-
-    # add drawable and soft body
-    ixTriDR = cScene.AddDrawableTri('tri1',      # VAO key
-                          triVerts,    # verts
-                          [0,0],       # pos
-                          [1,1],       # scale
-                          [0,0,1,1],   # color
-                          0 )          # rotation
-
-    # Kind of a pain
-    ixTriSB = cScene.AddSoftBody(pylShape.Triangle, [0, 0], { 'aX' : triVerts[0][0], 'aY' : triVerts[0][1],
+    ixSoftTriDR = cScene.AddDrawableTri('tri1', # VAO key
+                          triVerts,         # verts
+                          [0,0],            # pos
+                          [1,1],            # scale
+                          [0,1,1,1],        # color
+                          0 )               # rotation
+    ixSoftTriSB = cScene.AddSoftBody(pylShape.Triangle, [0, 0], { 'aX' : triVerts[0][0], 'aY' : triVerts[0][1],
                                                     'bX' : triVerts[1][0], 'bY' : triVerts[1][1],
-                                                    'cX' : triVerts[2][0], 'cY' : triVerts[2][1]})
+                                                    'cX' : triVerts[2][0], 'cY' : triVerts[2][1]})   
+    liSoftEntities.append(SoftEntity(cScene, ixSoftTriSB, ixSoftTriDR))
+   
+    global g_SoftMouseManager
+    g_SoftMouseManager = MouseSoftBodyManager(cScene, liSoftEntities)
 
     # Input handling
     # Quit function, triggered by escape
@@ -206,22 +261,58 @@ def Initialize(pScene):
         cScene.SetPauseCollision(not(cScene.GetPauseCollision()))
     btnPlayPauseCollision = InputManager.Button(sdl2.keycode.SDLK_SPACE, fnUp = fnPlayPauseCollision)
 
-    def fnMotion(mouseMgr):
-        nonlocal cScene, cCamera, worldDims, ixTriSB, ixTriDR
+    def MouseToWorld(mousePos, sb = None, dr = None):
+        nonlocal cCamera, cScene, worldDims
         fWidth = float(cCamera.GetScreenWidth())
         fHeight = float(cCamera.GetScreenHeight())
-        nrmScreenPos = [p / f for p, f in zip(mouseMgr.mousePos, [fWidth, fHeight])]
+        nrmScreenPos = [p / f for p, f in zip(mousePos, [fWidth, fHeight])]
         nrmScreenPos[1] = 1. - nrmScreenPos[1]
         
         worldPos = [0., 0.]
         worldPos[0] = worldDims[0] + nrmScreenPos[0] * (worldDims[1]-worldDims[0])
         worldPos[1] = worldDims[2] + nrmScreenPos[1] * (worldDims[3]-worldDims[2])
 
-        sb = pylShape.Shape(cScene.GetSoftBody2D(ixTriSB))
-        dr = pylDrawable.Drawable(cScene.GetDrawable(ixTriDR))
-        sb.SetCenterPos(worldPos)
-        dr.SetPos2D(sb.Position())
-    mouseMgr = InputManager.MouseManager([], fnMotion = fnMotion)
+        if sb is not None:
+            sb.SetCenterPos(worldPos)
+        if dr is not None:
+            dr.SetPos2D(sb.Position())
+
+        return worldPos
+
+    def fnMotion(mouseMgr):
+        global g_SoftMouseManager
+        nonlocal cCamera, cScene, worldDims
+        sb = g_SoftMouseManager.activeEnt.GetSoftBody()
+        dr = g_SoftMouseManager.activeEnt.GetDrawable()
+        if not(sb.GetIsActive() and dr.GetIsActive()):
+            return
+
+        MouseToWorld(mouseMgr.mousePos, sb, dr)
+
+    class lbHandler:
+        def __init__(self, bOn):
+            self.bOn = bool(bOn)
+        def __call__(self, btn, mouseMgr):
+            global g_SoftMouseManager
+            nonlocal cScene
+            g_SoftMouseManager.activeEnt.SetIsActive(self.bOn)
+            if self.bOn:
+                sb = g_SoftMouseManager.activeEnt.GetSoftBody()
+                dr = g_SoftMouseManager.activeEnt.GetDrawable()
+                MouseToWorld(mouseMgr.mousePos, sb, dr)
+
+    btnLeftMouse = InputManager.Button(sdl2.SDL_BUTTON_LEFT, fnDown = lbHandler(True), fnUp = lbHandler(False))
+
+    def fnWheel(mouseMgr, sdlWheelEvent):
+        global g_SoftMouseManager
+        nonlocal cScene
+        if sdlWheelEvent.y != 0:
+            g_SoftMouseManager.Advance(True)
+            sb = g_SoftMouseManager.activeEnt.GetSoftBody()
+            dr = g_SoftMouseManager.activeEnt.GetDrawable()
+            MouseToWorld(mouseMgr.mousePos, sb, dr)
+
+    mouseMgr = InputManager.MouseManager([btnLeftMouse], fnMotion = fnMotion, fnWheel = fnWheel)
 
     # Create input manager (no mouse for now)
     global g_InputManager

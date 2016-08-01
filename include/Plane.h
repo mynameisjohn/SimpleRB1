@@ -4,6 +4,7 @@
 
 struct Plane
 {
+	bool bActive;
 	glm::vec2 v2Normal;
 	float fDist;
 
@@ -15,4 +16,17 @@ struct Plane
 	{
 		fDist = fD;
 	}
+
+
+	void SetIsActive( bool b )
+	{
+		bActive = b;
+	}
+
+	bool GetIsActive() const
+	{
+		return bActive;
+	}
+
+
 };
