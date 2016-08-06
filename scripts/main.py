@@ -23,6 +23,12 @@ import InputManager
 import random
 import itertools
 
+# Global containers
+g_liEnts = []
+g_liPlanes = []
+g_InputManager = InputManager.InputManager(None, None, None)
+g_SoftMouseManager = None
+
 # Used to construct ctypes sdl2 object
 # from pointer to object in C++
 import ctypes
@@ -67,6 +73,8 @@ class Entity:
         self.nID = Entity.nEntsCreated
         self.GetDrawableComponent().SetID(Entity.nEntsCreated)
         self.GetCollisionComponent().SetID(Entity.nEntsCreated)
+        Entity.nEntsCreated += 1
+
 
     def GetDrawableComponent(self):
         return pylDrawable.Drawable(self.cScene.GetDrawable(self.drIdx))
@@ -75,8 +83,26 @@ class Entity:
         return pylRigidBody2D.RigidBody2D(self.cScene.GetRigidBody2D(self.rbIdx))
 
     def Update(self):
+        # Get position of the collision component
+        c = self.GetCollisionComponent()
+        pos = c.Position()
+
+        global g_InputManager
+        if g_InputManager.mouseMgr.IsButtonPressed(sdl2.SDL_BUTTON_LEFT):
+            # If mouse is down, create an attractive potential
+            worldMousePos = g_InputManager.mouseMgr.fnMouseToWorld(g_InputManager.mouseMgr.mousePos)
+            dist = [p - w for w, p in zip(worldMousePos, pos)]
+            r2_inv = 1. / max(0.1, sum(di**2 for di in dist))
+            F = [-80.*di * r2_inv for di in dist]
+        else:
+            # Otherwise just do gravity
+            F = [0., -75. * c.GetMass()]
+
+        # Apply force
+        c.ApplyForce(F)
+
         # Update drawable transform
-        self.GetDrawableComponent().SetPos2D(self.GetCollisionComponent().Position())
+        self.GetDrawableComponent().SetPos2D(pos)
 
 # Doesn't do a whole lot for now
 class Plane:
@@ -91,6 +117,7 @@ class SoftEntity:
         self.cScene = cScene
         self.ixSB = ixSB
         self.ixDR = ixDR
+        self.idLastOverlapped = None
 
     def GetSoftBody(self):
         return pylShape.Shape(self.cScene.GetSoftBody2D(self.ixSB))
@@ -135,12 +162,6 @@ def CentroidToOrigin(verts):
         for j in range(D):
             verts[i][j] -= centroid[j]
 
-# Global containers
-g_liEnts = []
-g_liPlanes = []
-g_InputManager = InputManager.InputManager(None, None, None)
-g_SoftMouseManager = None
-
 # Initialize the scene
 def Initialize(pScene):
     # construct pyl scene
@@ -180,7 +201,7 @@ def Initialize(pScene):
     g_liEnts.append(Entity(cScene,
         rbPrim = pylShape.AABB,
         rbPos = [3,6],
-        rbVel = [-5,0],
+        rbVel = [0,0],
         rbMass = 1,
         rbElasticity = 1,
         rbDetails = {'w' : 1, 'h' : 1},
@@ -192,7 +213,7 @@ def Initialize(pScene):
     g_liEnts.append(Entity(cScene,
         rbPrim = pylShape.Circle,
         rbPos = [-3,0],
-        rbVel = [-5,0],
+        rbVel = [0,0],
         rbMass = 1,
         rbElasticity = 1,
         rbDetails = {'r' : .5},
@@ -313,6 +334,7 @@ def Initialize(pScene):
             MouseToWorld(mouseMgr.mousePos, sb, dr)
 
     mouseMgr = InputManager.MouseManager([btnLeftMouse], fnMotion = fnMotion, fnWheel = fnWheel)
+    mouseMgr.fnMouseToWorld = MouseToWorld
 
     # Create input manager (no mouse for now)
     global g_InputManager
@@ -332,6 +354,18 @@ def Update(pScene):
     # Update and draw scene
     cScene.Update()
     cScene.Draw()
+
+    for i in range(len(g_liEnts)):
+        for sb in g_SoftMouseManager.liSoftEntities:
+            p1 = sb.GetSoftBody().c_ptr
+            p2 = g_liEnts[i].GetCollisionComponent().c_ptr
+            if cScene.GetIsColliding(p1, p2):
+                print('soft')
+        for j in range(i+1, len(g_liEnts)):
+            p1 = g_liEnts[i].GetCollisionComponent().c_ptr
+            p2 = g_liEnts[j].GetCollisionComponent().c_ptr
+            if cScene.GetIsColliding(p2, p1):
+                print('hard')
 
 # Handle SDL2 events
 def HandleEvent(pSdlEvent, pScene):

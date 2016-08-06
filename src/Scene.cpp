@@ -5,6 +5,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <algorithm>
 
+
 Scene::Scene() :
 	m_bQuitFlag( false ),
 	m_bDrawContacts( false ),
@@ -96,59 +97,68 @@ void Scene::Update()
 		if ( m_vRigidBodies.size() < 2 )
 			return;
 
-		// For every plane
+		// Plane on rb
 		for ( Plane& P : m_vCollisionPlanes )
 		{
 			if ( P.GetIsActive() == false )
 				continue;
 
-			// For every RB
-			for ( auto itOuter = m_vRigidBodies.begin(); itOuter != m_vRigidBodies.end(); ++itOuter )
+			for ( RigidBody2D& RB : m_vRigidBodies )
 			{
-				if ( itOuter->GetIsActive() == false )
+				if ( RB.GetIsActive() == false )
 					continue;
 
-				const float fGrav = 20.f;
-				itOuter->v2Force += -vec2( 0, fGrav );
-
-				// Check Plane RB collisions
-				m_liSpeculativeContacts.push_back( GetSpeculativeContact( &P, &*itOuter ) );
-
-				// Check every one against the other
-				for ( auto itInner = itOuter + 1; itInner != m_vRigidBodies.end(); ++itInner )
-				{
-					if ( itInner->GetIsActive() == false )
-						continue;
-
-					// Skip if both have negative mass
-					if ( itOuter->fMass < 0 && itInner->fMass < 0 )
-						continue;
-
-					m_liSpeculativeContacts.push_back( GetSpeculativeContact( &*itOuter, &*itInner ) );
-				}
-
-				// Increment total energy while we're at it
-				fTotalEnergy += itOuter->GetKineticEnergy();
-
-				// Soft bodies here?
-				static size_t uOverlaps( 0 );
-				for ( SoftBody2D& sb : m_vSoftBodies )
-				{
-					if ( sb.GetIsActive() == false )
-						continue;
-
-					if ( IsOverlapping( &sb, &*itOuter ) )
-					{
-						std::cout << ++uOverlaps << std::endl;
-					}
-				}
+				m_liSpeculativeContacts.push_back( GetSpeculativeContact( &P, &RB ) );
 			}
 		}
 
-		// std::cout << fTotalEnergy << std::endl;
+		// For every plane
+
+			// For every RB
+		for ( auto itOuter = m_vRigidBodies.begin(); itOuter != m_vRigidBodies.end(); ++itOuter )
+		{
+			if ( itOuter->GetIsActive() == false )
+				continue;
+
+			// Check every one against the other
+			for ( auto itInner = itOuter + 1; itInner != m_vRigidBodies.end(); ++itInner )
+			{
+				if ( itInner->GetIsActive() == false )
+					continue;
+
+				// Skip if both have negative mass
+				if ( itOuter->fMass < 0 && itInner->fMass < 0 )
+					continue;
+
+				m_liSpeculativeContacts.push_back( GetSpeculativeContact( &*itOuter, &*itInner ) );
+			}
+
+			// Increment total energy while we're at it
+			fTotalEnergy += itOuter->GetKineticEnergy();
+
+			// Soft bodies here?
+			static size_t uOverlaps( 0 );
+			for ( SoftBody2D& sb : m_vSoftBodies )
+			{
+				if ( sb.GetIsActive() == false )
+					continue;
+
+				m_CollisionBank[ColPair(&sb, &*itOuter)] = IsOverlapping( &sb, &*itOuter );
+			}
+		}
+		
+		
 
 		// Solve contacts
 		m_ContactSolver.Solve( m_liSpeculativeContacts );
+
+		for ( Contact& c : m_liSpeculativeContacts )
+		{
+			if ( c.HasPlane() == false )
+			{
+				m_CollisionBank[ColPair((Shape *)c.GetBodyA(), (Shape *) c.GetBodyB())] = c.IsColliding();
+			}
+		}
 	}
 }
 
@@ -362,6 +372,23 @@ bool Scene::GetPauseCollision() const
 void Scene::SetDrawContacts( bool bDrawContacts )
 {
 	m_bDrawContacts = bDrawContacts;
+}
+
+//size_t ColPair_hash::operator() ( const ColPair v ) const
+//{
+//	size_t h1 = (size_t) v.first;
+//	size_t h2 = (size_t) v.second;
+//	return h1 ^ h2;
+//}
+
+bool Scene::GetIsColliding( Shape * pA, Shape * pB ) const
+{
+	auto it = m_CollisionBank.find( ColPair( pA, pB ) );
+	if ( it == m_CollisionBank.end() )
+	{
+		return false;
+	}
+	return it->second;
 }
 
 bool Scene::GetDrawContacts() const

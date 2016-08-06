@@ -8,6 +8,7 @@ struct Circle;
 struct AABB;
 struct Plane;
 struct Triangle;
+struct Shape;
 
 vec2 perp( vec2 v );	// returns (-v.y, v.x)
 float cross2D( vec2 a, vec2 b );

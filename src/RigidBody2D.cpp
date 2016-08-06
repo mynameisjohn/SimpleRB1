@@ -27,6 +27,21 @@ void RigidBody2D::Integrate(float fDT)
 	v2Force = vec2();
 }
 
+void RigidBody2D::SetForce( vec2 v2F )
+{
+	v2Force = v2F;
+}
+
+void RigidBody2D::ApplyForce( vec2 v2F )
+{
+	v2Force += v2F;
+}
+
+float RigidBody2D::GetMass() const
+{
+	return fMass;
+}
+
 RigidBody2D::RigidBody2D() :
 	Shape(),
 	fMass( 0 ),

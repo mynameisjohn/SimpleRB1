@@ -48,3 +48,38 @@ public:
 // Const ptr type
 template<typename T>
 using const_ptr = const T * const;
+
+// Used for hashing pairs
+template<typename P>
+struct pair_hash
+{
+	template <class T>
+	static inline void hash_combine( std::size_t & seed, const T& v )
+	{
+		std::hash<T> hasher;
+		seed ^= hasher( v ) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	}
+
+	size_t operator()( const P& p ) const
+	{
+		std::size_t seed1 = 0;
+		hash_combine( seed1, p.first );
+		hash_combine( seed1, p.second );
+
+		std::size_t seed2 = 0;
+		hash_combine( seed2, p.second );
+		hash_combine( seed2, p.first );
+
+		size_t ret = std::min( seed1, seed2 );
+		return ret;
+	}
+};
+
+template <typename P>
+struct pair_hash_eq
+{
+	bool operator()( const P& a, const P& b ) const
+	{
+		return pair_hash<P>()(a) == pair_hash<P>()(b);
+	}
+};

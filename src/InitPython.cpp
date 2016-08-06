@@ -58,7 +58,7 @@ bool ExposeScene()
 	AddMemFnToMod( pModDef, Scene, SetDrawContacts, void, bool );
 	AddMemFnToMod( pModDef, Scene, GetPauseCollision, bool );
 	AddMemFnToMod( pModDef, Scene, SetPauseCollision, void, bool );
-
+	AddMemFnToMod( pModDef, Scene, GetIsColliding, bool, Shape *, Shape * );
 	AddMemFnToMod( pModDef, Scene, Update, void );
 	AddMemFnToMod( pModDef, Scene, Draw, void );
 
@@ -166,6 +166,9 @@ bool ExposeRigidBody2D()
 	}
 
 	AddSubClassToMod( pModDef, RigidBody2D, pShapeMod, Shape );
+	AddMemFnToMod( pModDef, RigidBody2D, SetForce, void, vec2 );
+	AddMemFnToMod( pModDef, RigidBody2D, ApplyForce, void, vec2 );
+	AddMemFnToMod( pModDef, RigidBody2D, GetMass, float );
 
 	return true;
 }

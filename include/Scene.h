@@ -6,11 +6,17 @@
 #include "Shader.h"
 #include "Drawable.h"
 #include "Contact.h"
+#include "Util.h"
 
 #include <vector>
 #include <array>
 
 #include <SDL.h>
+
+#include <unordered_map>
+
+using ColPair = std::pair<Shape *, Shape *>;
+using ColBank = std::unordered_map < ColPair, bool, pair_hash<ColPair>, pair_hash_eq<ColPair>>;
 
 class Scene
 {
@@ -29,6 +35,8 @@ public:
 
 	void SetPauseCollision( bool bPauseCollision );
 	bool GetPauseCollision() const;
+
+	bool GetIsColliding( Shape * pA, Shape * pB ) const;
 
 	const Plane * GetPlane( const size_t planeIdx ) const;
 	const Shader * GetShaderPtr() const;
@@ -59,4 +67,5 @@ private:
 	std::vector<Plane> m_vCollisionPlanes;
 	std::list<Contact> m_liSpeculativeContacts;
 	Contact::Solver m_ContactSolver;
+	ColBank m_CollisionBank;
 };

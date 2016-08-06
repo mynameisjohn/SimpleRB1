@@ -64,10 +64,14 @@ struct RigidBody2D : public SoftBody2D
 	glm::vec2 GetMomentum() const;
 	float GetKineticEnergy() const;
 
+	float GetMass() const;
+
 	// Advance the object's position and velocity
 	// v2Force determines dV and is zeroed in this function
 	void Integrate( float fDT );
 
+	void ApplyForce( glm::vec2 v2F );
+	void SetForce( glm::vec2 v2F );
 
 	RigidBody2D( glm::vec2 vel, glm::vec2 c, float mass, float elasticity);
 };
